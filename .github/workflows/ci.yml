@@ -1,0 +1,37 @@
+name: ci
+
+# Runs on any push / PR — and on any fork: the whole pipeline uses the
+# deterministic MODEL_BACKEND=mock backend, so it needs NO secrets, NO API keys,
+# and NO network access to a model provider.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test-and-eval:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    env:
+      MODEL_BACKEND: mock
+      LANGFUSE_TRACING_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: make install
+
+      - name: Test (pytest suite)
+        run: make test
+
+      - name: Eval (deterministic security + illustrative mock metrics)
+        run: make eval

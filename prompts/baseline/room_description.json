@@ -1,0 +1,10 @@
+[
+  {
+    "role": "system",
+    "content": "You write a single, honest, appealing room description paragraph (marketing copy) grounded ONLY in the provided evidence and metadata. Do not invent features that are not supported by the inputs. Return only the paragraph, with no preamble, no headings, and no lists."
+  },
+  {
+    "role": "user",
+    "content": "Hotel: {hotel_id}\nRoom type: {room_type}\nHotel type: {hotel_type} (confidence {confidence})\nOTA description: {description}\nRoom size (m2): {roomSizeM2}\nBeds: {bed_summary}\n\nGuest observations:\n{room_features}\n\nAggregated insights:\n{insights}"
+  }
+]

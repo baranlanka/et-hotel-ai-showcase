@@ -1,0 +1,79 @@
+[
+  {
+    "proxy_id": "11111111-1111-4111-8111-111111111111",
+    "ip_address_port": "203.0.113.10:8000",
+    "proxy_username": "demo-user-01",
+    "proxy_password": "demo-pass-01",
+    "proxy_type": "datacenter",
+    "country_code": "US",
+    "city": "Springfield",
+    "timezone": "America/New_York",
+    "browser_fingerprint": "chrome125",
+    "profile_headers": {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Sec-CH-UA": "\"Chromium\";v=\"125\", \"Not.A/Brand\";v=\"24\""
+    }
+  },
+  {
+    "proxy_id": "22222222-2222-4222-8222-222222222222",
+    "ip_address_port": "203.0.113.11:8000",
+    "proxy_username": "demo-user-02",
+    "proxy_password": "demo-pass-02",
+    "proxy_type": "residential",
+    "country_code": "DE",
+    "city": "Exampleburg",
+    "timezone": "Europe/Berlin",
+    "browser_fingerprint": "chrome124",
+    "profile_headers": {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      "Accept-Language": "de-DE,de;q=0.9,en;q=0.8",
+      "Sec-CH-UA": "\"Chromium\";v=\"124\", \"Not.A/Brand\";v=\"24\""
+    }
+  },
+  {
+    "proxy_id": "33333333-3333-4333-8333-333333333333",
+    "ip_address_port": "198.51.100.20:9000",
+    "proxy_username": "demo-user-03",
+    "proxy_password": "demo-pass-03",
+    "proxy_type": "residential",
+    "country_code": "GB",
+    "city": "Sampleton",
+    "timezone": "Europe/London",
+    "browser_fingerprint": "safari17_0",
+    "profile_headers": {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+      "Accept-Language": "en-GB,en;q=0.9"
+    }
+  },
+  {
+    "proxy_id": "44444444-4444-4444-8444-444444444444",
+    "ip_address_port": "198.51.100.21:9000",
+    "proxy_username": "demo-user-04",
+    "proxy_password": "demo-pass-04",
+    "proxy_type": "mobile",
+    "country_code": "CA",
+    "city": "Testville",
+    "timezone": "America/Toronto",
+    "browser_fingerprint": "chrome123",
+    "profile_headers": {
+      "User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36",
+      "Accept-Language": "en-CA,en;q=0.9,fr-CA;q=0.7"
+    }
+  },
+  {
+    "proxy_id": "55555555-5555-4555-8555-555555555555",
+    "ip_address_port": "192.0.2.30:7000",
+    "proxy_username": "demo-user-05-rotate",
+    "proxy_password": "demo-pass-05",
+    "proxy_type": "datacenter",
+    "country_code": "FR",
+    "city": "Placeholder",
+    "timezone": "Europe/Paris",
+    "browser_fingerprint": "chrome120",
+    "profile_headers": {
+      "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8"
+    }
+  }
+]

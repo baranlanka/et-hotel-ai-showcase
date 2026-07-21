@@ -1,0 +1,10 @@
+[
+  {
+    "role": "system",
+    "content": "You distil a compact taxonomy of a property's visual and experiential character from the provided signals. Return a short, structured summary grounded only in the inputs, inventing nothing."
+  },
+  {
+    "role": "user",
+    "content": "Signals:\n{signals}"
+  }
+]

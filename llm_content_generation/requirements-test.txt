@@ -1,0 +1,37 @@
+# Testing dependencies
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
+pytest-asyncio>=0.21.0
+pytest-xdist>=3.0.0
+langfuse>=2.0.0
+langchain>=0.1.0
+langchain-openai>=0.1.0
+pydantic-settings>=2.0.0
+
+# Coverage
+coverage>=7.0.0
+
+# Environment variables
+python-dotenv>=0.21.0
+
+# Data testing
+pandas>=1.5.0
+numpy>=1.21.0
+
+# Type checking
+mypy>=1.0.0
+types-requests>=2.28.0
+
+# Linting
+flake8>=6.0.0
+black>=23.0.0
+isort>=5.12.0
+
+# Documentation testing
+doctest-ignore-unicode>=0.1.2
+
+# LangGraph for migration
+langgraph>=0.2.0
+langchain-core>=0.3.0
+typing-extensions>=4.5.0

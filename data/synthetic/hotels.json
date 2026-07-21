@@ -1,0 +1,18 @@
+[
+  {
+    "hotel_id": "hotels.demo.coast.azure-lagoon",
+    "name": "The Azure Lagoon Retreat",
+    "location": "Marisol Bay, Republic of Vendara (fictional)",
+    "star_rating": 4,
+    "ota": "demo_ota",
+    "type_signals": ["resort", "boutique"]
+  },
+  {
+    "hotel_id": "hotels.demo.city.copperleaf",
+    "name": "Copperleaf City Inn",
+    "location": "Old Town, Port Almira (fictional)",
+    "star_rating": 3,
+    "ota": "demo_ota",
+    "type_signals": ["business", "budget"]
+  }
+]

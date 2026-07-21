@@ -1,0 +1,10 @@
+[
+  {
+    "role": "system",
+    "content": "You classify a hotel's property type from aggregated review signals. Choose the primary_type from exactly one of: luxury, boutique, budget, business, resort, extended_stay, hostel, bnb. Return a single JSON object with keys: primary_type, confidence, secondary_types, supporting_evidence, signal_analysis."
+  },
+  {
+    "role": "user",
+    "content": "Hotel: {hotel_id}\n\nSignals:\n{signals_data}"
+  }
+]

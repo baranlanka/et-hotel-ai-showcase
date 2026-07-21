@@ -1,0 +1,52 @@
+[
+  {
+    "hotel_id": "hotels.demo.coast.azure-lagoon",
+    "id": "rev-azure-0001",
+    "roomType": "Deluxe Ocean Suite",
+    "guestDetails": {"username": "TravellerMina"},
+    "textDetails": {
+      "positiveText": "The balcony view over the lagoon at sunrise was unforgettable and the staff arranged a late checkout without any fuss.",
+      "negativeText": "The air conditioning was a little noisy at night."
+    }
+  },
+  {
+    "hotel_id": "hotels.demo.coast.azure-lagoon",
+    "id": "rev-azure-0002",
+    "roomType": "Garden Bungalow",
+    "guestDetails": {"username": "PalmSeeker"},
+    "textDetails": {
+      "positiveText": "Waking up in the garden bungalow surrounded by palms felt like a private hideaway, and the outdoor shower was lovely.",
+      "negativeText": "The path to the bungalow was dimly lit after dark."
+    }
+  },
+  {
+    "hotel_id": "hotels.demo.coast.azure-lagoon",
+    "id": "rev-azure-0003",
+    "roomType": "Lagoon Studio",
+    "guestDetails": {"username": "BudgetWanderer"},
+    "textDetails": {
+      "positiveText": "Great value studio, the kitchenette meant we could cook simple meals and the partial water view was a nice bonus.",
+      "negativeText": "The studio was a bit small for two large suitcases."
+    }
+  },
+  {
+    "hotel_id": "hotels.demo.city.copperleaf",
+    "id": "rev-copper-0001",
+    "roomType": "Business King Room",
+    "guestDetails": {"username": "RoadWarriorK"},
+    "textDetails": {
+      "positiveText": "Perfect for a work trip: the wifi was fast, the desk was spacious, and the rain shower woke me up every morning.",
+      "negativeText": "Breakfast options were limited for early risers."
+    }
+  },
+  {
+    "hotel_id": "hotels.demo.city.copperleaf",
+    "id": "rev-copper-0002",
+    "roomType": "Standard Queen Room",
+    "guestDetails": {"username": "QuietStayFan"},
+    "textDetails": {
+      "positiveText": "The blackout curtains and quiet street-facing room gave me the best sleep I have had while travelling for business.",
+      "negativeText": "The lobby can get busy at check-in time."
+    }
+  }
+]

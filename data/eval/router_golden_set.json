@@ -1,0 +1,627 @@
+{
+  "_meta": {
+    "feature": "F3 conversational-agents-b-e",
+    "component": "",
+    "ac": "",
+    "release": "agentic-outreach",
+    "schema_version": "1.0",
+    "status": "POPULATED",
+    "authored_by": "implementation — synthetic simulated hotel replies",
+    "target_count": 40,
+    "current_count": 64,
+    "adr": "ADR-OUTREACH-006 — eval-set-as-parity-contract; ADR-OUTREACH-008 — influencer-pretext pivot",
+    "class_distribution": {
+      "interested": 12,
+      "question": 11,
+      "has_site": 8,
+      "not_interested": 8,
+      "stop": 6,
+      "unclear": 11,
+      "reservation_request": 8
+    },
+    "validation_note": "Every expected_intent value is a member of IntentEnum; every expected_next_action is a member of NextActionEnum (app/temporal/workflows/leadgen/models.py). All stop items pair intent=stop with next_action=close per . All has_site items pair intent=has_site with next_action=close per routing rule 3 in interpret_response_activity (has_site → close; corrected 2026-06-09 from send_D which was incorrect — hotels that already have a site should not trigger site-generation). 2026-06-15 (ADR-OUTREACH-008 influencer-pretext pivot): added SIM-042..049 covering the new first-reply reality — warm 'who recommended us?' curiosity is question→send_C (C answers generally, never names a source); a skeptical/hostile challenge to how we found them ('are you sure you have the right hotel?', 'who exactly recommended us, and when?') is unclear→escalate (route to a human, do not let C invent a checkable source); flattery never overrides has_site→close (SIM-047)."
+  },
+  "_schema": {
+    "id": "string — unique case identifier (e.g. SIM-001)",
+    "inbound_message": "string — simulated hotel reply text",
+    "expected_intent": "one of: interested|question|has_site|not_interested|stop|unclear|reservation_request",
+    "expected_next_action": "one of: send_C|send_D|escalate|close|wait",
+    "tier": "optional — T1|T2|T3 personalization tier the opener used",
+    "sentiment": "positive|neutral|negative",
+    "notes": "optional — rationale or edge-case description"
+  },
+  "_traceability": {
+    "feature": "F3 conversational-agents-b-e",
+    "component": "",
+    "acs": [""],
+    "target_count": 40,
+    "categories": [
+      "interested",
+      "we use OTA only / has_site",
+      "hostile / not_interested",
+      "STOP",
+      "off-topic / unclear",
+      "questions"
+    ]
+  },
+  "cases": [
+    {
+      "id": "SIM-001",
+      "inbound_message": "Hello! Yes, we would be very interested to know more about a website for our property. Please send us more details.",
+      "expected_intent": "interested",
+      "expected_next_action": "send_C",
+      "tier": "T1",
+      "sentiment": "positive",
+      "notes": "Clear eager interest, explicit request for more info — canonical interested case."
+    },
+    {
+      "id": "SIM-002",
+      "inbound_message": "Hi, thanks for reaching out. We actually don't have our own website so this sounds interesting. What would the process look like?",
+      "expected_intent": "interested",
+      "expected_next_action": "send_C",
+      "tier": "T2",
+      "sentiment": "positive",
+      "notes": "Interest plus embedded question; intent=interested because the hotel confirms no site and wants to proceed."
+    },
+    {
+      "id": "SIM-003",
+      "inbound_message": "Good morning. We have been thinking about getting a website. Tell me more please.",
+      "expected_intent": "interested",
+      "expected_next_action": "send_C",
+      "tier": "T3",
+      "sentiment": "positive",
+      "notes": "Warm, unprompted disclosure they have been considering it."
+    },
+    {
+      "id": "SIM-004",
+      "inbound_message": "Yes! We would love a proper website. We rely entirely on OTA right now and it is not ideal.",
+      "expected_intent": "interested",
+      "expected_next_action": "send_C",
+      "tier": "T2",
+      "sentiment": "positive",
+      "notes": "Mentions OTA dependency but frames it as a pain point and expresses desire for own site — intent=interested, not has_site."
+    },
+    {
+      "id": "SIM-005",
+      "inbound_message": "Sure, send me more information. We are open to hearing about this.",
+      "expected_intent": "interested",
+      "expected_next_action": "send_C",
+      "tier": "T3",
+      "sentiment": "neutral",
+      "notes": "Polite but mild interest; not enthusiastic but clearly not negative."
+    },
+    {
+      "id": "SIM-006",
+      "inbound_message": "That sounds very promising. We have guests who always ask for our direct website for repeat reservations. Please go ahead.",
+      "expected_intent": "interested",
+      "expected_next_action": "send_C",
+      "tier": "T1",
+      "sentiment": "positive",
+      "notes": "Specific pain point (repeat-reservation guests) strengthens intent signal."
+    },
+    {
+      "id": "SIM-007",
+      "inbound_message": "We are interested. Can you also tell us about payment integration for direct reservations?",
+      "expected_intent": "interested",
+      "expected_next_action": "send_C",
+      "tier": "T2",
+      "sentiment": "positive",
+      "notes": "Contains a question but the primary signal is declared interest; question is downstream detail."
+    },
+    {
+      "id": "SIM-008",
+      "inbound_message": "My manager reviewed your message and we would like to proceed. Please explain what you need from our side.",
+      "expected_intent": "interested",
+      "expected_next_action": "send_C",
+      "tier": "T1",
+      "sentiment": "positive",
+      "notes": "Decision-maker involved; clear green-light."
+    },
+    {
+      "id": "SIM-009",
+      "inbound_message": "What is included in the free website offer exactly? Is there a catch?",
+      "expected_intent": "question",
+      "expected_next_action": "send_C",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Skeptical question about the offer; no commitment either way — needs qualifying answer."
+    },
+    {
+      "id": "SIM-010",
+      "inbound_message": "How long does it take to set up the website? And do we need to provide photos ourselves?",
+      "expected_intent": "question",
+      "expected_next_action": "send_C",
+      "tier": "T3",
+      "sentiment": "neutral",
+      "notes": "Two practical setup questions; implies interest but primary signal is informational."
+    },
+    {
+      "id": "SIM-011",
+      "inbound_message": "Who owns the website once it is built? Can we move it to our own hosting later?",
+      "expected_intent": "question",
+      "expected_next_action": "send_C",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Ownership/portability question — legitimate due diligence before committing."
+    },
+    {
+      "id": "SIM-012",
+      "inbound_message": "Is this free forever or only for a trial period? What happens after?",
+      "expected_intent": "question",
+      "expected_next_action": "send_C",
+      "tier": "T3",
+      "sentiment": "neutral",
+      "notes": "Pricing ambiguity question — needs honest answer before prospect can decide."
+    },
+    {
+      "id": "SIM-013",
+      "inbound_message": "Can the website support Vietnamese language? Most of our guests are domestic.",
+      "expected_intent": "question",
+      "expected_next_action": "send_C",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Localisation feature question; implied interest in the offer."
+    },
+    {
+      "id": "SIM-014",
+      "inbound_message": "Do you also help with SEO? We want people to find us on Google.",
+      "expected_intent": "question",
+      "expected_next_action": "send_C",
+      "tier": "T1",
+      "sentiment": "neutral",
+      "notes": "Feature question about SEO; positive framing — wanting discoverability."
+    },
+    {
+      "id": "SIM-015",
+      "inbound_message": "Will this work with our existing OTA account or does it replace it?",
+      "expected_intent": "question",
+      "expected_next_action": "send_C",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Integration question; common concern from OTA-dependent hotels — needs reassurance answer."
+    },
+    {
+      "id": "SIM-016",
+      "inbound_message": "We already have our own website, thank you. Please check sunsettresort.com",
+      "expected_intent": "has_site",
+      "expected_next_action": "close",
+      "tier": "T3",
+      "sentiment": "neutral",
+      "notes": "Explicit own-site declaration with URL — canonical has_site case. Routing rule 3: has_site → close (hotel already has a site; site-generation is not applicable)."
+    },
+    {
+      "id": "SIM-017",
+      "inbound_message": "We have a website. It was made by a local agency two years ago.",
+      "expected_intent": "has_site",
+      "expected_next_action": "close",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Has-site without URL — close funnel. Routing rule 3: has_site → close."
+
+    },
+    {
+      "id": "SIM-018",
+      "inbound_message": "Yes we use OTA and also have our own site at hoanglong-hotel.example",
+      "expected_intent": "has_site",
+      "expected_next_action": "close",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Both OTA and own site — has_site → close. Routing rule 3: has_site → close."
+    },
+    {
+      "id": "SIM-019",
+      "inbound_message": "Our hotel website is already online. It is on WordPress.",
+      "expected_intent": "has_site",
+      "expected_next_action": "close",
+      "tier": "T3",
+      "sentiment": "neutral",
+      "notes": "Has site on WordPress — close funnel. Routing rule 3: has_site → close."
+    },
+    {
+      "id": "SIM-020",
+      "inbound_message": "Thanks but we already have a reservation platform integrated on our own domain.",
+      "expected_intent": "has_site",
+      "expected_next_action": "close",
+      "tier": "T1",
+      "sentiment": "neutral",
+      "notes": "Has own domain with reservation platform — close funnel. Routing rule 3: has_site → close."
+    },
+    {
+      "id": "SIM-021",
+      "inbound_message": "We have a page on our Facebook, does that count? We use that instead of a website.",
+      "expected_intent": "interested",
+      "expected_next_action": "send_C",
+      "tier": "T3",
+      "sentiment": "neutral",
+      "notes": "A Facebook page is NOT a working direct-reservation website (guests cannot self-book there) — so this is the core lead, not has_site. interested → send_C (the free direct-reservation-page offer is exactly relevant here)."
+    },
+    {
+      "id": "SIM-022",
+      "inbound_message": "We are not interested. Please do not message us again.",
+      "expected_intent": "stop",
+      "expected_next_action": "close",
+      "tier": "T3",
+      "sentiment": "negative",
+      "notes": "\"Please do not message us again\" is an explicit opt-out demand (no STOP keyword, but an unambiguous request to cease contact) → stop → close."
+    },
+    {
+      "id": "SIM-023",
+      "inbound_message": "We use only OTA and are happy with it. No need for a website.",
+      "expected_intent": "not_interested",
+      "expected_next_action": "close",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Classic 'OTA only' objection with explicit satisfaction — not_interested."
+    },
+    {
+      "id": "SIM-024",
+      "inbound_message": "We rely on OTAs and have no budget or need for a separate website. Thank you.",
+      "expected_intent": "not_interested",
+      "expected_next_action": "close",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Budget+need objection; polite but firm — not_interested."
+    },
+    {
+      "id": "SIM-025",
+      "inbound_message": "Not interested at this time.",
+      "expected_intent": "not_interested",
+      "expected_next_action": "close",
+      "tier": "T3",
+      "sentiment": "neutral",
+      "notes": "Terse rejection; short reply — not_interested, close."
+    },
+    {
+      "id": "SIM-026",
+      "inbound_message": "We are a small family guesthouse and this is not relevant for us. Good luck.",
+      "expected_intent": "not_interested",
+      "expected_next_action": "close",
+      "tier": "T3",
+      "sentiment": "neutral",
+      "notes": "Self-disqualification (size/relevance) — not_interested, close cleanly."
+    },
+    {
+      "id": "SIM-027",
+      "inbound_message": "Our owner has decided we will not pursue this. Thank you for your message.",
+      "expected_intent": "not_interested",
+      "expected_next_action": "close",
+      "tier": "T1",
+      "sentiment": "neutral",
+      "notes": "Decision-maker explicit rejection; polite finality — not_interested, close."
+    },
+    {
+      "id": "SIM-028",
+      "inbound_message": "We tried a website before and it was a waste of money. Not interested.",
+      "expected_intent": "not_interested",
+      "expected_next_action": "close",
+      "tier": "T2",
+      "sentiment": "negative",
+      "notes": "Past negative experience; explicit rejection — not_interested."
+    },
+    {
+      "id": "SIM-029",
+      "inbound_message": "STOP",
+      "expected_intent": "stop",
+      "expected_next_action": "close",
+      "tier": "T3",
+      "sentiment": "negative",
+      "notes": "Bare STOP keyword — canonical opt-out. intent=stop AND next_action=close."
+    },
+    {
+      "id": "SIM-030",
+      "inbound_message": "Please stop messaging us immediately.",
+      "expected_intent": "stop",
+      "expected_next_action": "close",
+      "tier": "T3",
+      "sentiment": "negative",
+      "notes": "Explicit stop request in plain language — must be treated as opt-out. ."
+    },
+    {
+      "id": "SIM-031",
+      "inbound_message": "Unsubscribe. Remove our number from your list.",
+      "expected_intent": "stop",
+      "expected_next_action": "close",
+      "tier": "T2",
+      "sentiment": "negative",
+      "notes": "Unsubscribe + list-removal demand — legal opt-out equivalent. ."
+    },
+    {
+      "id": "SIM-032",
+      "inbound_message": "Do not contact us again. This is harassment.",
+      "expected_intent": "stop",
+      "expected_next_action": "close",
+      "tier": "T1",
+      "sentiment": "negative",
+      "notes": "Hostile opt-out with harassment claim — definitely stop+close, must not retry. ."
+    },
+    {
+      "id": "SIM-033",
+      "inbound_message": "Arrêtez de m'envoyer des messages / Stop sending messages.",
+      "expected_intent": "stop",
+      "expected_next_action": "close",
+      "tier": "T3",
+      "sentiment": "negative",
+      "notes": "Bilingual (French+English) stop request — stop keyword present in English portion. ."
+    },
+    {
+      "id": "SIM-034",
+      "inbound_message": "Ok",
+      "expected_intent": "unclear",
+      "expected_next_action": "wait",
+      "tier": "T3",
+      "sentiment": "neutral",
+      "notes": "Single word with no interpretable signal — unclear, wait for follow-up."
+    },
+    {
+      "id": "SIM-035",
+      "inbound_message": "We will think about it.",
+      "expected_intent": "unclear",
+      "expected_next_action": "wait",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Non-committal deferral — unclear, set wait to give time before follow-up nudge."
+    },
+    {
+      "id": "SIM-036",
+      "inbound_message": "Can you send me your brochure?",
+      "expected_intent": "unclear",
+      "expected_next_action": "escalate",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Request for brochure is off-script — agent cannot fulfil; escalate to human to handle."
+    },
+    {
+      "id": "SIM-037",
+      "inbound_message": "Hello, we are looking for a tour operator partner. Are you a travel agency?",
+      "expected_intent": "unclear",
+      "expected_next_action": "escalate",
+      "tier": "T3",
+      "sentiment": "neutral",
+      "notes": "Completely off-topic: prospect asking us if we're a tour operator — escalate, human needed."
+    },
+    {
+      "id": "SIM-038",
+      "inbound_message": "Sorry I pressed the wrong button. Ignore this.",
+      "expected_intent": "unclear",
+      "expected_next_action": "wait",
+      "tier": "T3",
+      "sentiment": "neutral",
+      "notes": "Accidental reply; no intent signal — unclear, wait without acting."
+    },
+    {
+      "id": "SIM-039",
+      "inbound_message": "👍",
+      "expected_intent": "unclear",
+      "expected_next_action": "wait",
+      "tier": "T3",
+      "sentiment": "neutral",
+      "notes": "Emoji-only reply with no decodable intent — unclear, wait."
+    },
+    {
+      "id": "SIM-040",
+      "inbound_message": "We are currently under renovation and will reopen in March. Maybe contact us then.",
+      "expected_intent": "unclear",
+      "expected_next_action": "wait",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Temporary deferral with future intent signal — not a rejection. Ambiguous: is this interested (later) or not_interested (now)? Labelled unclear+wait as safest classification; human review appropriate at follow-up."
+    },
+    {
+      "id": "SIM-041",
+      "inbound_message": "Yes, please go ahead and build the website. We are ready to proceed.",
+      "expected_intent": "interested",
+      "expected_next_action": "send_D",
+      "tier": "T1",
+      "sentiment": "positive",
+      "funnel_stage_hint": "qualifier_sent",
+      "notes": "Explicit green-light at qualifier stage — hotel has confirmed interest and no site; agent should proceed to site-reveal (send_D). Routing rule 7: at site-reveal stage with confirmed interest → send_D."
+    },
+    {
+      "id": "SIM-042",
+      "inbound_message": "Oh how kind! May I ask who recommended us?",
+      "expected_intent": "question",
+      "expected_next_action": "send_C",
+      "tier": "T1",
+      "sentiment": "positive",
+      "notes": "pretext pivot: warm, curious 'who recommended us?' is a question (engaged) -> send_C. Agent C answers GENERALLY (a travel contact) and pivots to the offer; it must never name a specific source."
+    },
+    {
+      "id": "SIM-043",
+      "inbound_message": "Thank you so much, that means a lot. Which blog was it? We'd love to thank them!",
+      "expected_intent": "question",
+      "expected_next_action": "send_C",
+      "tier": "T1",
+      "sentiment": "positive",
+      "notes": "Pretext pivot: warm request to name the blog. Still a question -> send_C. The danger case for C — it must stay general and not invent a checkable blog/influencer name."
+    },
+    {
+      "id": "SIM-044",
+      "inbound_message": "That's lovely to hear. We don't have our own website yet — what would you suggest?",
+      "expected_intent": "interested",
+      "expected_next_action": "send_C",
+      "tier": "T2",
+      "sentiment": "positive",
+      "notes": "Pretext pivot: flattered by the recommendation, confirms no site, asks to proceed -> interested -> send_C."
+    },
+    {
+      "id": "SIM-045",
+      "inbound_message": "We've never worked with any travel bloggers. Are you sure you have the right hotel?",
+      "expected_intent": "unclear",
+      "expected_next_action": "escalate",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Pretext pivot: pointed, skeptical challenge to how we found them. NOT a question to auto-answer (C would have to dig the pretext deeper) — route to a human -> escalate."
+    },
+    {
+      "id": "SIM-046",
+      "inbound_message": "Interesting — how did you hear about us?",
+      "expected_intent": "question",
+      "expected_next_action": "send_C",
+      "tier": "T3",
+      "sentiment": "neutral",
+      "notes": "Pretext pivot: neutral-curious 'how did you hear about us?' is an engaged question -> send_C (general answer + pivot to offer)."
+    },
+    {
+      "id": "SIM-047",
+      "inbound_message": "Thank you for the kind words! We actually already have our own website though.",
+      "expected_intent": "has_site",
+      "expected_next_action": "close",
+      "tier": "T1",
+      "sentiment": "positive",
+      "notes": "Pretext pivot: flattery must NOT override has_site. Hotel already has a site -> close (routing rule 2)."
+    },
+    {
+      "id": "SIM-048",
+      "inbound_message": "Wow, thank you! That is so kind of them. Yes, we would love a website.",
+      "expected_intent": "interested",
+      "expected_next_action": "send_C",
+      "tier": "T1",
+      "sentiment": "positive",
+      "notes": "Pretext pivot: flattered + explicit interest at opener stage -> interested -> send_C (qualify before any site reveal)."
+    },
+    {
+      "id": "SIM-049",
+      "inbound_message": "This sounds like a sales trick. Who exactly recommended us, and when?",
+      "expected_intent": "unclear",
+      "expected_next_action": "escalate",
+      "tier": "T2",
+      "sentiment": "negative",
+      "notes": "Pretext pivot: hostile credibility challenge demanding a specific, checkable source — the failure mode the pretext most risks. Route to a human -> escalate; do not let C improvise a fake source."
+    },
+    {
+      "id": "SIM-050",
+      "inbound_message": "What dates were you looking at? We have good availability this month.",
+      "expected_intent": "reservation_request",
+      "expected_next_action": "send_C",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Classic customer-misread: hotel asks us for stay dates instead of answering the direct-reservation question. reservation_request -> send_C (Agent C deflects-and-requalifies). Never unclear/wait."
+    },
+    {
+      "id": "SIM-051",
+      "inbound_message": "We'd love to host you! When would you like to come and how many guests?",
+      "expected_intent": "reservation_request",
+      "expected_next_action": "send_C",
+      "tier": "T1",
+      "sentiment": "positive",
+      "notes": "Warm reservation_request: hotel is enthusiastic but asking for reservation details. Strong core-lead signal (manual reservations, no own site) but question skipped — reservation_request/send_C."
+    },
+    {
+      "id": "SIM-052",
+      "inbound_message": "Just email us your dates and the number of guests and we'll sort it out directly.",
+      "expected_intent": "reservation_request",
+      "expected_next_action": "send_C",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Hotel offering to take reservations over email — reservation_request. No own direct-reservation site mentioned; manual channel = core lead. Route send_C to deflect and re-pose the qualifying question."
+    },
+    {
+      "id": "SIM-053",
+      "inbound_message": "chat the dates to +1 555 000 1234 and we'll confirm your reservation.",
+      "expected_intent": "reservation_request",
+      "expected_next_action": "send_C",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Hotel accepting reservations over chat — reservation_request. Manual channel with no own site. Agent C re-ask should reference chat as the channel when deflecting."
+    },
+    {
+      "id": "SIM-054",
+      "inbound_message": "How many rooms and which nights were you thinking? We can hold one for you.",
+      "expected_intent": "reservation_request",
+      "expected_next_action": "send_C",
+      "tier": "T2",
+      "sentiment": "positive",
+      "notes": "Hotel offering to manually hold a room — reservation_request. Reveals manual reservation process. Never classify as unclear; send_C to deflect and re-qualify."
+    },
+    {
+      "id": "SIM-055",
+      "inbound_message": "Happy to take your reservation directly — just let us know the check-in date and how long you're staying.",
+      "expected_intent": "reservation_request",
+      "expected_next_action": "send_C",
+      "tier": "T1",
+      "sentiment": "positive",
+      "notes": "Explicit manual direct reservation offer — reservation_request. 'Take your reservation directly' with no mention of own website reveals they mean manually (not via a reservation site). send_C."
+    },
+    {
+      "id": "SIM-056",
+      "inbound_message": "You're all set for the 5th to the 7th — see you then! We've noted the reservation.",
+      "expected_intent": "reservation_request",
+      "expected_next_action": "send_C",
+      "tier": "T2",
+      "sentiment": "positive",
+      "notes": "Over-commit: hotel has written us in their book without us providing dates. Still reservation_request — they're responding AS IF we are a customer. Agent C must NOT accept/confirm dates; send_C to deflect warmly."
+    },
+    {
+      "id": "SIM-057",
+      "inbound_message": "What name should I put the reservation under? We'll hold it for you.",
+      "expected_intent": "reservation_request",
+      "expected_next_action": "send_C",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Hotel asking for guest name to complete a reservation — reservation_request. Manual reservation process with no own site signal. send_C to deflect and re-pose the qualifying question."
+    },
+    {
+      "id": "SIM-058",
+      "inbound_message": "We have our own website at hotelx.example and we're also listed on OTA.",
+      "expected_intent": "has_site",
+      "expected_next_action": "close",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Hotel has own domain AND OTA listing. has_site takes priority — close the funnel gracefully. Routing rule 2: has_site -> close."
+    },
+    {
+      "id": "SIM-059",
+      "inbound_message": "We use a channel manager and an agency for all our online reservations — they handle everything for us.",
+      "expected_intent": "interested",
+      "expected_next_action": "send_C",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Hotel uses intermediaries (channel manager + agency) not their own direct-reservation site. No own site = core lead. interested/send_C — the free site offer is relevant."
+    },
+    {
+      "id": "SIM-060",
+      "inbound_message": "Auto-Reply: I am out of office until Monday. For urgent matters please contact reception@example.com. I will reply when I return.",
+      "expected_intent": "unclear",
+      "expected_next_action": "wait",
+      "tier": "T3",
+      "sentiment": "neutral",
+      "notes": "Auto-reply OOO — no actionable signal. unclear/wait; do not trigger follow-up messaging until a real reply arrives."
+    },
+    {
+      "id": "SIM-061",
+      "inbound_message": "How did you get my email address? I never signed up for any mailing list or marketing contact.",
+      "expected_intent": "unclear",
+      "expected_next_action": "escalate",
+      "tier": "T2",
+      "sentiment": "negative",
+      "notes": "Skeptical challenge to how we obtained their contact — pointed, needs a human. unclear/escalate; do not let Agent C improvise an explanation."
+    },
+    {
+      "id": "SIM-062",
+      "inbound_message": "We're on OTA mostly, but who actually recommended us to you, out of curiosity?",
+      "expected_intent": "question",
+      "expected_next_action": "send_C",
+      "tier": "T2",
+      "sentiment": "neutral",
+      "notes": "Warm curiosity about referral source plus implicit OTA signal. question/send_C — Agent C answers generally (travel contact who stayed) and pivots. Must never name a specific source."
+    },
+    {
+      "id": "SIM-063",
+      "inbound_message": "Please remove me from your mailing list. I don't want any more emails like this.",
+      "expected_intent": "stop",
+      "expected_next_action": "close",
+      "tier": "T3",
+      "sentiment": "negative",
+      "notes": "Explicit list-removal / opt-out request. stop/close per . 'remove me' matches the STOP keyword gate."
+    },
+    {
+      "id": "SIM-064",
+      "inbound_message": "Not for us, thanks.",
+      "expected_intent": "not_interested",
+      "expected_next_action": "close",
+      "tier": "T3",
+      "sentiment": "neutral",
+      "notes": "Terse polite rejection. not_interested/close — no opt-out keyword, but clear declination."
+    }
+  ]
+}

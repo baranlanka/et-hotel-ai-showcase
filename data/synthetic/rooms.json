@@ -1,0 +1,42 @@
+[
+  {
+    "hotel_id": "hotels.demo.coast.azure-lagoon",
+    "roomType": "Deluxe Ocean Suite",
+    "description": "A bright corner suite with a private balcony overlooking the lagoon.",
+    "roomSizeM2": 46,
+    "bed_summary": "1 king bed",
+    "bathroomCount": 1
+  },
+  {
+    "hotel_id": "hotels.demo.coast.azure-lagoon",
+    "roomType": "Garden Bungalow",
+    "description": "A standalone bungalow set among the palm gardens with an outdoor shower.",
+    "roomSizeM2": 38,
+    "bed_summary": "1 queen bed",
+    "bathroomCount": 1
+  },
+  {
+    "hotel_id": "hotels.demo.coast.azure-lagoon",
+    "roomType": "Lagoon Studio",
+    "description": "A compact studio with a kitchenette and a partial water view.",
+    "roomSizeM2": 28,
+    "bed_summary": "1 double bed",
+    "bathroomCount": 1
+  },
+  {
+    "hotel_id": "hotels.demo.city.copperleaf",
+    "roomType": "Standard Queen Room",
+    "description": "A quiet street-facing room with a work desk and blackout curtains.",
+    "roomSizeM2": 20,
+    "bed_summary": "1 queen bed",
+    "bathroomCount": 1
+  },
+  {
+    "hotel_id": "hotels.demo.city.copperleaf",
+    "roomType": "Business King Room",
+    "description": "A larger room with a lounge chair, fast wifi, and a rain shower.",
+    "roomSizeM2": 26,
+    "bed_summary": "1 king bed",
+    "bathroomCount": 1
+  }
+]

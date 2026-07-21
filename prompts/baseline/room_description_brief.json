@@ -1,0 +1,10 @@
+[
+  {
+    "role": "system",
+    "content": "You distil a short, one-line card blurb from a full room description paragraph. Keep it concrete and warm. Return only the blurb, with no quotes and no preamble."
+  },
+  {
+    "role": "user",
+    "content": "Room type: {room_type}\n\nFull room description:\n{full_description}"
+  }
+]

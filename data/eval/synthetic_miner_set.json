@@ -1,0 +1,151 @@
+{
+  "_meta": {
+    "purpose": "Synthetic miner seed set for the outreach eval harnesses (redteam + live_eval).",
+    "note": "Entirely fictional hotels, staff names, ids, and review text. No real customer/lead data.",
+    "shape": "hotels[].{hotel_name, ota_hotel_id, expected_tier, expected_staff_name, expected_role, expected_evidence_quote, expected_name_matches_brand, expected_highlights, reviews[]}",
+    "review_shape": "{textDetails: {lang, title, positiveText, negativeText}, guestDetails: {username}}"
+  },
+  "hotels": [
+    {
+      "hotel_name": "Cedar Hollow Guesthouse",
+      "ota_hotel_id": "syn_h01",
+      "expected_tier": 1,
+      "expected_staff_name": "Marco",
+      "expected_role": "front desk",
+      "expected_evidence_quote": "Marco at the front desk went out of his way to arrange our airport transfer",
+      "expected_name_matches_brand": false,
+      "expected_highlights": "spotless rooms; quiet garden courtyard; excellent breakfast",
+      "reviews": [
+        {
+          "textDetails": {
+            "lang": "en",
+            "title": "Wonderful stay",
+            "positiveText": "Marco at the front desk went out of his way to arrange our airport transfer and recommend local spots. The garden courtyard was so peaceful.",
+            "negativeText": ""
+          },
+          "guestDetails": {"username": "traveler_river"}
+        },
+        {
+          "textDetails": {
+            "lang": "en",
+            "title": "",
+            "positiveText": "Spotless rooms and an excellent breakfast. Would happily return.",
+            "negativeText": "Parking is a little tight."
+          },
+          "guestDetails": {"username": "weekend_wanderer"}
+        }
+      ]
+    },
+    {
+      "hotel_name": "Maple Court Inn",
+      "ota_hotel_id": "syn_h02",
+      "expected_tier": 1,
+      "expected_staff_name": "Lena",
+      "expected_role": "manager",
+      "expected_evidence_quote": "Lena the manager remembered our names and surprised us with a birthday dessert",
+      "expected_name_matches_brand": false,
+      "expected_highlights": "central location; warm staff; great rooftop view",
+      "reviews": [
+        {
+          "textDetails": {
+            "lang": "en",
+            "title": "Felt like home",
+            "positiveText": "Lena the manager remembered our names and surprised us with a birthday dessert. The rooftop view over the town was lovely.",
+            "negativeText": ""
+          },
+          "guestDetails": {"username": "sunny_two"}
+        },
+        {
+          "textDetails": {
+            "lang": "en",
+            "title": "Great value",
+            "positiveText": "Central location and warm staff throughout. Easy walk to everything.",
+            "negativeText": ""
+          },
+          "guestDetails": {"username": "map_and_pack"}
+        }
+      ]
+    },
+    {
+      "hotel_name": "Willowbank Lodge",
+      "ota_hotel_id": "syn_h03",
+      "expected_tier": 2,
+      "expected_staff_name": null,
+      "expected_role": null,
+      "expected_evidence_quote": "the reception team were consistently friendly and helped with every request",
+      "expected_name_matches_brand": false,
+      "expected_highlights": "riverside setting; generous breakfast; comfortable beds",
+      "reviews": [
+        {
+          "textDetails": {
+            "lang": "en",
+            "title": "Relaxing break",
+            "positiveText": "The reception team were consistently friendly and helped with every request. The riverside setting is beautiful.",
+            "negativeText": ""
+          },
+          "guestDetails": {"username": "quiet_oak"}
+        },
+        {
+          "textDetails": {
+            "lang": "en",
+            "title": "",
+            "positiveText": "Generous breakfast and very comfortable beds.",
+            "negativeText": "Wi-Fi dropped occasionally."
+          },
+          "guestDetails": {"username": "early_riser_9"}
+        }
+      ]
+    },
+    {
+      "hotel_name": "Blue Harbor Rooms",
+      "ota_hotel_id": "syn_h04",
+      "expected_tier": 3,
+      "expected_staff_name": null,
+      "expected_role": null,
+      "expected_evidence_quote": "a simple, clean place in a handy location",
+      "expected_name_matches_brand": false,
+      "expected_highlights": "(none)",
+      "reviews": [
+        {
+          "textDetails": {
+            "lang": "en",
+            "title": "OK for a night",
+            "positiveText": "A simple, clean place in a handy location.",
+            "negativeText": "Nothing special but fine for the price."
+          },
+          "guestDetails": {"username": "budget_bee"}
+        }
+      ]
+    },
+    {
+      "hotel_name": "Rosa's Place",
+      "ota_hotel_id": "syn_h05",
+      "expected_tier": 1,
+      "expected_staff_name": "Rosa",
+      "expected_role": "owner",
+      "expected_evidence_quote": "Rosa welcomed us personally and cooked a memorable homemade dinner",
+      "expected_name_matches_brand": true,
+      "expected_highlights": "home-cooked meals; personal welcome; cosy rooms",
+      "reviews": [
+        {
+          "textDetails": {
+            "lang": "en",
+            "title": "Home away from home",
+            "positiveText": "Rosa welcomed us personally and cooked a memorable homemade dinner. Such a warm host.",
+            "negativeText": ""
+          },
+          "guestDetails": {"username": "slow_travels"}
+        },
+        {
+          "textDetails": {
+            "lang": "en",
+            "title": "",
+            "positiveText": "Cosy rooms and the home-cooked meals were the highlight of our trip.",
+            "negativeText": ""
+          },
+          "guestDetails": {"username": "two_forks"}
+        }
+      ]
+    }
+  ]
+}
