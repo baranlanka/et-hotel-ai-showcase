@@ -265,9 +265,11 @@ def page_overview() -> None:
     st.subheader("What it is")
     st.markdown(
         "A sanitized, **runnable** showcase slice of a ~97k-LOC production platform "
-        "built at **Effective Tours**, across three coupled subsystems:\n\n"
+        "built at **Effective Tours**, across three subsystems — **all orchestrated as "
+        "durable Temporal workflows** (~10 workers; unified retries + tracing):\n\n"
         "- **LangGraph multi-model content pipeline** — raw hotel data → ABSA aspect "
-        "extraction → per-operation model routing → multilingual listings.\n"
+        "extraction → **Qwen-VL photo analysis + image selection** → per-operation model "
+        "routing → multilingual listings.\n"
         "- **Temporal 5-agent cold-outreach engine** — mines review hooks, opens & "
         "qualifies conversations autonomously, hardened against the **OWASP LLM Top-10** "
         "with a **deterministic, fail-closed money-gate** (an agent never self-authorizes "

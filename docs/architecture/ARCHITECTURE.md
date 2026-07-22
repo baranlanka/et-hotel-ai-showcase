@@ -30,36 +30,40 @@ flowchart TB
 
 ## 2. Container view
 
-Ten worker services around a durable core. The showcase extracts the two agentic subsystems + the fetcher; the rest (publishing, storage, CD) is described, not shipped.
+**Every subsystem runs as durable Temporal workflows/activities** — content generation, scraping, proxy management, and outreach — across ~10 worker services, giving the whole platform one retry/recovery/tracing spine. The showcase extracts the content pipeline as a standalone LangGraph slice and the outreach engine's real Temporal workflow; the rest (the vision/image tail, publishing, storage, CD) is described, not shipped.
 
 ```mermaid
-flowchart LR
+flowchart TB
     OTA[(OTA / web data)] --> F
-    subgraph fetch[Resilient fetcher · app/shared]
-      F[proxy pool + failover<br/>circuit breaker · rate limiter<br/>backoff+jitter · profile cache]
+    subgraph temporal[Temporal — durable orchestration · retries · tracing · ~10 workers]
+      direction LR
+      subgraph fetch[Resilient fetcher · app/shared]
+        F[proxy pool + failover<br/>circuit breaker · rate limiter<br/>backoff · profile cache]
+      end
+      subgraph pipeline[Content pipeline · LangGraph]
+        direction TB
+        A[aspect extraction<br/>ABSA + LLM] --> AGG[hotel-type aggregation]
+        AGG --> V[vision · Qwen-VL<br/>photo analysis · image selection]
+        V --> G[multi-model generation<br/>overviews · rooms · summaries]
+        G --> T[translation]
+      end
+      subgraph agents[Outreach engine · 5 agents]
+        direction TB
+        IG[input guard] --> R[Agent E · router]
+        R --> C[Agent C · qualifier]
+        R --> D[Agent D · site reveal]
+        C --> OG[output guard]
+        D --> MG{{money-gate<br/>fail-closed}}
+        MG --> ops[Human approval]
+      end
+      F --> A
     end
-    subgraph pipeline[Content pipeline · LangGraph]
-      A[aspect extraction<br/>ABSA + LLM] --> AGG[hotel-type aggregation] --> G[multi-model generation<br/>overviews · rooms · summaries] --> T[translation]
-    end
-    subgraph agents[Outreach engine · Temporal]
-      direction TB
-      IG[input guard] --> R[Agent E · router]
-      R --> B[Agent B · opener]
-      R --> C[Agent C · qualifier]
-      R --> D[Agent D · site reveal]
-      C --> OG[output guard]
-      D --> MG{{money-gate<br/>fail-closed}}
-      MG --> ops[Human approval]
-    end
-    F --> A
     T --> CMS[(CMS + CDN)]
     LF[(Langfuse)] -. prompts .-> G
     LF -. prompts .-> R
-    DB[(CockroachDB<br/>SQLAlchemy 2.0)] --- pipeline
-    DB --- agents
-    RD[(Redis)] --- agents
-    pipeline --> OBS[OTel → Grafana / Tempo / Loki / Prometheus]
-    agents --> OBS
+    DB[(CockroachDB)] --- temporal
+    RD[(Redis)] --- temporal
+    temporal --> OBS[OTel → Grafana / Tempo / Loki / Prometheus]
 ```
 
 ## 3. Runtime view — the 5-agent outreach turn

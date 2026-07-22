@@ -20,7 +20,7 @@ A design-and-evaluation write-up for the reader who wants the reasoning, not jus
 
 | Bet | Why |
 |---|---|
-| **Temporal** durable workflows for the agent conversations | Long-lived, resumable, replayable state with retries and circuit breakers — the conversation *is* the workflow |
+| **Temporal** durable workflows for **every** activity — content generation, scraping, proxy management, and outreach (~10 workers) | Long-lived, resumable, replayable state with retries and circuit-breaking, plus one distributed-tracing spine for the whole platform |
 | **LangGraph** `StateGraph` + an **`llm_factory`** routing each operation to a **small, cheap open model** (DeepSeek / Qwen / Llama) — never a frontier model | The achievement is production quality *without* GPT-5/Claude; different tasks (extraction vs. vision vs. long-form) have different quality/cost sweet spots, and cost matters at scale |
 | **Defense-in-depth guardrails** (spotlighting/datamarking input guard, deterministic output leak-guard, model-layer validators) | Untrusted text enters from reviews and replies; a single prompt-level "ignore instructions" is not a control |
 | **A deterministic, fail-closed money-gate** | Safety of an irreversible action must not depend on model judgment or a mutable config flag |
@@ -30,9 +30,9 @@ See [docs/adr/](docs/adr) for each decision as a record with the alternatives an
 
 ## 3. Building-block view
 
-Three subsystems, detailed in [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md):
+Three subsystems — **all orchestrated as durable Temporal workflows/activities across ~10 worker services** (retries, recovery, and one distributed-tracing spine), detailed in [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md):
 
-- **Content pipeline** — `aspect extraction (ABSA + LLM) → hotel-type aggregation → multi-model generation → translation`, wired as composable LangGraph subgraphs.
+- **Content pipeline** — `aspect extraction (ABSA + LLM) → hotel-type aggregation → Qwen-VL vision (photo analysis + display-image selection) → multi-model generation → translation`, wired as composable LangGraph subgraphs.
 - **Outreach engine** — a 5-agent (`router / opener / qualifier / site-reveal / miner`) durable Temporal state machine over an inbound-signal loop, wrapped by the guards and the money-gate.
 - **Resilient fetcher** — a generic fault-tolerant distributed HTTP/GraphQL engine (proxy failover, circuit breaker, token-bucket rate limiting, backoff-with-jitter).
 

@@ -36,9 +36,9 @@ A. DETERMINISTIC SECURITY / GUARD ASSERTIONS  (gate the exit code)
 
 Effective Tours needed two things a small team can't do by hand at scale: **(1)** produce rich, accurate, *multilingual* content for tens of thousands of hotels, and **(2)** find and recruit new hotels through personalized outreach — without a human writing every message, and **without ever letting an autonomous agent take a money-committing action on its own.**
 
-This repo is the engineering answer to both, as two coupled product lines:
+This repo is the engineering answer to both — two product lines plus a shared ingestion layer, **all running as durable [Temporal](https://temporal.io) workflows** (content generation, scraping, proxy management, and outreach are each Temporal activities across ~10 worker services — the platform's shared backbone for retries, recovery, and distributed tracing):
 
-- **A LangGraph multi-model content pipeline** — ingest hotel data → extract aspects (a fine-tuned ABSA model + LLM) → generate overviews, room descriptions, and review summaries → translate → publish. Each operation is routed to a **different, cost-appropriate model** via an LLM factory.
+- **A LangGraph multi-model content pipeline** — ingest hotel data → extract aspects (a fine-tuned ABSA model + LLM) → **analyze property & room photos with a Qwen-VL vision model and select the best display images** → generate overviews, room descriptions, and review summaries → translate → publish. Each operation is routed to a **different, cost-appropriate model** via an LLM factory.
 - **A Temporal-orchestrated, 5-agent cold-outreach engine** — it mines personalization hooks from reviews, opens a conversation, qualifies replies, and drives a funnel *autonomously* — hardened against the OWASP **LLM Top-10** (prompt injection, output leakage, excessive agency) with a **deterministic, fail-closed "money-action" gate** and a **reproducible red-team + eval harness**.
 - **A resilient distributed fetcher** — the ingestion backbone that reliably pulled hotel data through production-grade, *adaptive* anti-bot defenses (WAF-style rate limiting, IP-reputation bans, fingerprint & bot-challenges): a rotating proxy pool with failover, per-request browser/TLS fingerprint synthesis, circuit breaking, and rate limiting. *Targets and purpose are withheld; a neutral, self-hosted resilience PoC is included — see [below](#resilient-distributed-fetcher).*
 
@@ -52,15 +52,17 @@ This repo is the engineering answer to both, as two coupled product lines:
 
 | Subsystem | What it demonstrates | Runnable here |
 |---|---|---|
-| **Content pipeline** (`llm_content_generation/`) | LangGraph `StateGraph` of subgraphs, **per-operation multi-model routing** (`llm_factory`), cost guardrails, ABSA aspect extraction, Langfuse-managed prompts with a local fallback | `make demo-graph` — runs the aspect→content graph on a synthetic hotel with a mock model |
+| **Content pipeline** (`llm_content_generation/`) | LangGraph `StateGraph` of subgraphs, **per-operation multi-model routing** (`llm_factory`), cost guardrails, ABSA aspect extraction, a **Qwen-VL vision stage** (photo analysis + display-image selection — described), Langfuse-managed prompts with a local fallback | `make demo-graph` — runs the aspect→content graph on a synthetic hotel with a mock model |
 | **Outreach engine + eval** (`app/leadgen/`, `app/temporal/…/leadgen/`, `scripts/eval/`) | 5-agent durable **Temporal** state machine, **OWASP-LLM** input/output guards (spotlighting + datamarking), a **fail-closed money-gate**, structured Pydantic outputs, and a **red-team + eval harness** | `make eval` — reproduces the deterministic safety properties offline |
 | **Resilient fetcher** (`app/shared/`) | A generic, fault-tolerant distributed HTTP/GraphQL engine: **proxy rotation + failover, browser/TLS fingerprint synthesis, circuit breaker, token-bucket rate limiting, backoff-with-jitter** — battle-tested in production against adaptive anti-bot defenses | `make demo-resilience` — the real engine vs. a hostile endpoint; `make demo-scrape` — neutral backend |
+
+**Temporal is the backbone under all of it.** In production, content generation, scraping, proxy management, and outreach each run as **durable Temporal workflows/activities** — one orchestration, retry, recovery, and distributed-tracing layer for the whole platform, not just the agents. *(This showcase extracts the content pipeline as a standalone LangGraph slice and ships the outreach engine's actual Temporal workflow; the full cross-service wiring is described, not shipped.)*
 
 Plus a **runnable, sanitized observability stack** (`infra/observability/` — OpenTelemetry → Tempo/Loki/Prometheus → Grafana; `docker compose up`) and an [illustrative service-topology compose](docs/deployment/topology.docker-compose.yml).
 
 ## Tech stack
 
-**Orchestration & agents:** Temporal · LangGraph · LangChain · Pydantic (structured outputs)
+**Orchestration & agents:** **Temporal** — platform-wide durable orchestration; *every* subsystem (content · scraping · proxy · outreach) runs as Temporal workflows/activities · LangGraph · LangChain · Pydantic (structured outputs)
 **Models & prompts:** OpenRouter (DeepSeek / Qwen-VL / Mistral / Llama) · local LM Studio/Ollama · a fine-tuned ABSA model · **Langfuse** (prompt management + tracing)
 **Backend & data:** FastAPI · CockroachDB (SQLAlchemy 2.0 + Alembic) · Redis · Backblaze B2/CDN
 **Platform:** Docker · GitHub Actions → GHCR → Komodo CD · self-hosted **OpenTelemetry → Grafana / Tempo / Loki / Prometheus**
@@ -68,26 +70,27 @@ Plus a **runnable, sanitized observability stack** (`infra/observability/` — O
 ## Architecture
 
 ```mermaid
-flowchart LR
+flowchart TB
     OTA[(OTA / web data)] --> F
-    subgraph fetch[Resilient fetcher]
-      F[proxy failover · circuit breaker<br/>rate limiting · backoff+jitter]
+    subgraph temporal[Temporal — durable orchestration · retries · tracing · ~10 workers]
+      direction LR
+      subgraph fetch[Resilient fetcher]
+        F[proxy rotation · circuit breaker<br/>rate limiting · backoff]
+      end
+      subgraph pipeline[Content pipeline · LangGraph]
+        A[aspect extraction<br/>ABSA + LLM] --> G[multi-model routing]
+      end
+      subgraph agents[Outreach engine · 5 agents]
+        GU[OWASP-LLM guards] --- R[router]
+        R --> Q[qualifier] --> MG{{money-gate<br/>fail-closed}}
+      end
+      F --> A
     end
-    subgraph pipeline[Content pipeline — LangGraph]
-      A[aspect extraction<br/>ABSA + LLM] --> G[multi-model generation<br/>per-operation routing]
-    end
-    subgraph agents[Outreach engine — Temporal]
-      GU[OWASP-LLM guards<br/>input · output] --- R[router agent]
-      R --> Q[qualifier] --> MG{{money-gate<br/>fail-closed → human}}
-    end
-    F --> A
     G --> CMS[(CMS + CDN)]
     LF[(Langfuse<br/>prompts · tracing)] -. prompts .-> G
     LF -. prompts .-> R
-    DB[(CockroachDB)] --- pipeline
-    DB --- agents
-    pipeline --> OBS[OTel → Grafana / Tempo / Loki / Prometheus]
-    agents --> OBS
+    DB[(CockroachDB)] --- temporal
+    temporal --> OBS[OTel → Grafana / Tempo / Loki / Prometheus]
 ```
 
 One diagram; the full container/runtime views and the 5-agent sequence diagram are in **[docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)**.
@@ -96,7 +99,7 @@ One diagram; the full container/runtime views and the 5-agent sequence diagram a
 
 | Decision | Options considered | Choice | Trade-off accepted |
 |---|---|---|---|
-| Orchestrating autonomous, long-lived agent conversations | Celery / raw queues + a state column; ad-hoc async | **Temporal** durable workflows | Operational weight of a Temporal cluster, and workflow-determinism discipline — bought durability, retries, and replayable state |
+| Orchestrating **every** activity across the platform (content gen · scraping · proxy mgmt · outreach) | Celery / raw queues + a state column; ad-hoc async | **Temporal** durable workflows as the platform-wide backbone (~10 workers) | Operational weight of a Temporal cluster + workflow-determinism discipline — bought durability, retries, replayable state, and unified tracing everywhere |
 | Letting an agent take a money-committing action (`send_D`) | Trust the model + a confidence threshold | **Deterministic fail-closed gate** — every `send_D` is force-routed to human approval; the switch changes only via reviewed code, never an env var | The agent is never fully autonomous on irreversible actions (by design — this is the point) |
 | Defending against prompt injection from scraped reviews/replies | Prompt-only "ignore instructions"; a classifier | **Spotlighting + datamarking** (Microsoft) + a **deterministic output leak-guard** | Extra pre/post-processing per turn; some benign inputs get datamarked — worth it for a hard DATA/instruction boundary |
 | Model selection across ~8 operations | A single **frontier** model (GPT-5 / Claude) everywhere | **Per-operation routing to small, cheap open models** (DeepSeek / Qwen / Llama) via an `llm_factory` + a hard cost guardrail | More config + an eval per operation — but a fraction of the cost, and it *proves* the engineering rather than leaning on a big model |
@@ -183,7 +186,7 @@ This is a real production system, so it is shown *responsibly*:
 - [x] Runnable, sanitized observability stack (`infra/observability/`)
 - [ ] `MODEL_BACKEND=ollama` walkthrough reproducing live model metrics
 
-**Known limitations (honest):** this is a *slice*, not the whole platform — the vision/image tail, the CMS/publishing integration, and the real orchestration wiring are out of scope here. The offline demo uses a mock model, so it proves the *architecture and the deterministic safety properties*, not model quality. The full production system (durable orchestration, distributed SQL, observability triad, CD) is described in [METHODS.md](METHODS.md) and the ADRs rather than shipped.
+**Known limitations (honest):** this is a *runnable slice*, not the whole platform. The **vision stage** (Qwen-VL photo analysis + display-image selection + image taxonomy) and the CMS/publishing integration need the production image store, so they're **described in the architecture, not shipped runnable** — likewise most cross-service Temporal wiring (the content pipeline runs standalone here, while the outreach engine's real Temporal workflow *is* included). The offline demo uses a mock model, so it proves the *architecture and the deterministic safety properties*, not model quality. The full production system (durable orchestration, distributed SQL, observability triad, CD) is described in [METHODS.md](METHODS.md) and the ADRs rather than shipped.
 
 ## Acknowledgments
 
