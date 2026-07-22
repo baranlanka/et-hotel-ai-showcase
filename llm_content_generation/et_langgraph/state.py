@@ -52,9 +52,9 @@ class ContentGenerationState(TypedDict):
 
     # Processing Data
     extracted_aspects: Annotated[List[Dict[str, Any]], operator.add]
-    aggregated_data_key: Optional[str]  # B2 reference key - PERFORMANCE OPT
+    aggregated_data_key: Optional[str]  # aggregated-data reference key - PERFORMANCE OPT
 
-    # Hotel Type Classification Data - Epic 9 Integration
+    # Hotel Type Classification Data - hotel-type integration
     hotel_context_signals: Annotated[List[Dict[str, Any]], operator.add]  # Per-review hotel signals
     hotel_type_classification: Optional[Dict[str, Any]]  # Aggregated hotel type result
 
@@ -165,7 +165,7 @@ def create_initial_state(
         extracted_aspects=[],
         aggregated_data_key=None,
 
-        # Hotel Type Classification Data - Epic 9 Integration
+        # Hotel Type Classification Data - hotel-type integration
         hotel_context_signals=[],
         hotel_type_classification=None,
 

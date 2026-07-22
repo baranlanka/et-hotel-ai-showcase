@@ -162,7 +162,7 @@ def traced_operation(
         Trace ID if tracing is enabled, None otherwise
 
     Examples:
-        # Epic 1 extraction
+        # extraction
         with traced_operation(
             name="hotel-review-aspect-extraction",
             session_id=f"extraction-{hotel_id}-{date}",
@@ -175,7 +175,7 @@ def traced_operation(
             # Extraction logic here
             pass
             
-        # Epic 3 summarization
+        # summarization
         with traced_operation(
             name="hotel-description-generation",
             session_id=f"summarization-{hotel_id}-{date}",
@@ -418,7 +418,7 @@ def get_callback_handler(
         Configured CallbackHandler instance with comprehensive context or None if disabled
 
     Examples:
-        # Epic 1 extraction handler
+        # extraction handler
         handler = get_callback_handler(
             session_id=f"extraction-{hotel_id}-{date}",
             user_id=hotel_id,
@@ -429,7 +429,7 @@ def get_callback_handler(
             metadata={"prompt_version": "v2.1", "model": "mistral-7b"}
         )
         
-        # Epic 3 summarization handler
+        # summarization handler
         handler = get_callback_handler(
             session_id=f"summarization-{hotel_id}-{date}",
             user_id=hotel_id,
@@ -573,7 +573,7 @@ class PromptLinkingCallback(BaseCallbackHandler):
     linked to the LangFuse prompt that was used, enabling proper prompt
     tracking and versioning in the LangFuse dashboard.
     
-    Based on the working implementation from Epic 3 pipeline.
+    Based on the working implementation from the content pipeline.
     """
     
     def __init__(self, prompt_obj: Any):

@@ -2,9 +2,9 @@ from __future__ import annotations
 import asyncio
 from typing import Any, Dict, Optional
 
-# Temporary override knob for room-prompt A/B testing — set ET76_ROOM_PROMPT_LABEL
-# (or fall back to ET76_PROMPT_LABEL) to pull a non-production label.
-# Sourced from PipelineExtraConfig (ADR-5) — resolved lazily so tests that
+# Temporary override knob for room-prompt A/B testing — set ROOM_PROMPT_LABEL
+# (or fall back to PROMPT_LABEL) to pull a non-production label.
+# Sourced from PipelineExtraConfig — resolved lazily so tests that
 # monkeypatch env vars and reset the settings cache see the override.
 def _get_room_prompt_label() -> str:
     from llm_content_generation.core.config import get_pipeline_extra_settings
@@ -752,7 +752,7 @@ async def _process_single_room(
             "bed_summary": bed_summary,
             "bathroomCount": bathroom_count,
             "apartmentRooms": apartment_rooms,
-            # Nullable property-level pass-throughs (D10)
+            # Nullable property-level pass-throughs
             "property_facilities": property_facilities,
             "property_highlights": property_highlights,
             # Sibling rooms in this property — lets the model
@@ -920,7 +920,7 @@ async def room_description_node(state: ContentGenerationState) -> Dict[str, Any]
     data_key = state.get("aggregated_data_key")
     aggregated = await load_aggregated_data(data_key) if data_key else None
 
-    # Nullable property-level pass-throughs (D10)
+    # Nullable property-level pass-throughs
     # Pre-serialize raw OTA JSON to labeled prose for
     # DeepSeek V3.2. Empty/None → "" so Mustache section blocks skip cleanly.
     property_facilities = format_property_facilities(state.get("property_facilities"))

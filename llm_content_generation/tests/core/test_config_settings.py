@@ -1,11 +1,11 @@
-"""Comprehensive ADR-5 tests for the pydantic-settings config conversion.
+"""Comprehensive tests for the pydantic-settings config conversion.
 
 Covers:
 - Every settings model: defaults when env unset; env override per field
 - Type coercion: ints, floats, bools (including "true"/"True"/"1"/"" edge cases)
 - Cached accessor returns same instance; cache reset works
 - Stray-call-site fields (DESCRIPTIONS_MAX_TOKENS, VISION_MAX_TOKENS,
-  LLM_ALLOW_EXPENSIVE_MODELS, REVIEW_BATCH_SIZE, ET76_* labels)
+  LLM_ALLOW_EXPENSIVE_MODELS, REVIEW_BATCH_SIZE, *_PROMPT_LABEL labels)
 - Backward-compat: module-level `settings` singleton still importable
 - SecurityConfig list properties
 - PipelineExtraConfig fallback chain
@@ -434,7 +434,7 @@ class TestSecurityConfigListProperties:
 
 
 # ---------------------------------------------------------------------------
-# PipelineExtraConfig — REVIEW_BATCH_SIZE + ET76_* fallback chain
+# PipelineExtraConfig — REVIEW_BATCH_SIZE + *_PROMPT_LABEL fallback chain
 # ---------------------------------------------------------------------------
 
 
@@ -455,27 +455,27 @@ class TestPipelineExtraConfig:
     def test_description_prompt_label_default(self):
         from llm_content_generation.core.config import PipelineExtraConfig
         env = {k: v for k, v in os.environ.items()
-               if k not in ("ET76_HOTEL_PROMPT_LABEL", "ET76_PROMPT_LABEL")}
+               if k not in ("HOTEL_PROMPT_LABEL", "PROMPT_LABEL")}
         with patch.dict(os.environ, env, clear=True):
             c = PipelineExtraConfig()
             assert c.description_prompt_label == "production"
 
-    def test_description_prompt_label_from_et76_prompt_label(self):
+    def test_description_prompt_label_from_prompt_label(self):
         from llm_content_generation.core.config import PipelineExtraConfig
         env = {k: v for k, v in os.environ.items()
-               if k not in ("ET76_HOTEL_PROMPT_LABEL", "ET76_PROMPT_LABEL")}
-        env["ET76_PROMPT_LABEL"] = "staging"
+               if k not in ("HOTEL_PROMPT_LABEL", "PROMPT_LABEL")}
+        env["PROMPT_LABEL"] = "staging"
         with patch.dict(os.environ, env, clear=True):
             c = PipelineExtraConfig()
             assert c.description_prompt_label == "staging"
 
     def test_description_prompt_label_hotel_overrides_base(self):
-        """ET76_HOTEL_PROMPT_LABEL takes precedence over ET76_PROMPT_LABEL."""
+        """HOTEL_PROMPT_LABEL takes precedence over PROMPT_LABEL."""
         from llm_content_generation.core.config import PipelineExtraConfig
         env = {k: v for k, v in os.environ.items()
-               if k not in ("ET76_HOTEL_PROMPT_LABEL", "ET76_PROMPT_LABEL")}
-        env["ET76_HOTEL_PROMPT_LABEL"] = "hotel-v2"
-        env["ET76_PROMPT_LABEL"] = "old-label"
+               if k not in ("HOTEL_PROMPT_LABEL", "PROMPT_LABEL")}
+        env["HOTEL_PROMPT_LABEL"] = "hotel-v2"
+        env["PROMPT_LABEL"] = "old-label"
         with patch.dict(os.environ, env, clear=True):
             c = PipelineExtraConfig()
             assert c.description_prompt_label == "hotel-v2"
@@ -656,7 +656,7 @@ class TestContentGenerationConfigBatchSize:
 
 
 class TestNoOsGetenvInConfigModule:
-    """ADR-5 acceptance criterion: zero os.getenv data-class defaults."""
+    """Acceptance criterion: zero os.getenv data-class defaults."""
 
     def test_no_getenv_in_field_defaults(self):
         """Read config.py source and verify no os.getenv in field default lines.
@@ -695,5 +695,5 @@ class TestNoOsGetenvInConfigModule:
         assert non_infra == [], (
             f"Found os.getenv() calls at lines {non_infra} outside the "
             f"_load_env_from_repo_root infrastructure helper. These must be "
-            f"replaced with pydantic-settings Field() declarations per ADR-5."
+            f"replaced with pydantic-settings Field() declarations."
         )

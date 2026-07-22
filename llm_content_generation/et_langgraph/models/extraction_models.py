@@ -35,7 +35,7 @@ class CategoryAspect(BaseModel):
 
 
 class HotelSignal(BaseModel):
-    """Hotel property type signal detected in review - Epic 9 Integration."""
+    """Hotel property type signal detected in review - hotel-type integration."""
 
     signal_type: str = Field(
         description="Type of hotel property signal detected"
@@ -193,7 +193,7 @@ class RoomDescription(BaseModel):
 
 
 class HotelTypeClassification(BaseModel):
-    """Hotel type classification result from aggregated signals - Epic 9 Integration."""
+    """Hotel type classification result from aggregated signals - hotel-type integration."""
 
     primary_type: Literal["luxury", "boutique", "budget", "business", "resort", "extended_stay", "hostel", "bnb"] = Field(
         description="Primary hotel property type classification"

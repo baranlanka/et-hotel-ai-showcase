@@ -5,18 +5,18 @@ from __future__ import annotations
 from typing import Optional, Any, Dict
 
 # Global singleton instances
-# ARCHIVED: _shared_chain_factory removed in Epic 7 chainless migration
+# ARCHIVED: _shared_chain_factory removed in the chainless migration
 _shared_response_parser: Optional[object] = None
 _shared_validator: Optional[object] = None
 _shared_llm_factory: Optional[object] = None
 _shared_prompt_manager: Optional[object] = None
 
 
-# ARCHIVED: Legacy chain factory removed in Epic 7 chainless migration
+# ARCHIVED: Legacy chain factory removed in the chainless migration
 # All chain functionality moved to direct component usage in LangGraph nodes
 
 
-# ARCHIVED: Removed in Epic 7 chainless migration
+# ARCHIVED: Removed in the chainless migration
 # def get_shared_chain_factory(): ...
 
 
@@ -50,11 +50,11 @@ def get_shared_prompt_manager():
 	return _shared_prompt_manager
 
 
-# ARCHIVED: Removed in Epic 7 chainless migration
+# ARCHIVED: Removed in the chainless migration
 # def clear_chain_cache(): ...
 
 
-# ARCHIVED: Removed in Epic 7 chainless migration
+# ARCHIVED: Removed in the chainless migration
 # def clear_chain_cache_for_operation(operation: str): ...
 
 

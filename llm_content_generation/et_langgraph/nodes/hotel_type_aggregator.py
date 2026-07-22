@@ -1,6 +1,6 @@
-"""Hotel type aggregator node for Epic 9 integration.
+"""Hotel type aggregator node for hotel-type integration.
 
-Clean implementation that loads DataFrame from B2, filters hotel signals,
+Clean implementation that loads DataFrame from the aggregated store, filters hotel signals,
 and makes a single LLM call for classification. Fails fast on issues.
 """
 
@@ -68,7 +68,7 @@ async def _classify_hotel_type_from_signals(
     signals_data: str,
     logger: Any = None
 ) -> Dict[str, Any]:
-    """LLM helper function for hotel type classification - Epic 9."""
+    """LLM helper function for hotel type classification."""
 
     prompt_manager = get_shared_prompt_manager()
     llm_factory = get_shared_llm_factory()
@@ -128,7 +128,7 @@ async def _classify_hotel_type_from_signals(
 async def hotel_type_aggregator_node(
     state: ContentGenerationState
 ) -> Dict[str, Any]:
-    """Aggregate hotel signals into type classification - Epic 9."""
+    """Aggregate hotel signals into type classification."""
 
     from llm_content_generation.shared.singletons import get_shared_llm_factory
     logger = get_shared_llm_factory().logger

@@ -21,7 +21,7 @@ def _model_backend() -> str:
 
 # Lazy: creating the unified manager touches app.core.config (15 required env
 # vars via RotatingLoggingManager settings). This package must stay importable
-# without the app environment (ADR-5), so the manager is built on first use.
+# without the app environment (an architecture decision), so the manager is built on first use.
 _obs = None
 
 
@@ -101,12 +101,12 @@ class LLMConfig:
     
     @classmethod
     def for_extraction(cls) -> LLMConfig:
-        """Create config specifically for Epic 1 extraction/processing."""
+        """Create config specifically for extraction/processing."""
         return cls.from_settings("extraction")
     
     @classmethod
     def for_descriptions(cls) -> LLMConfig:
-        """Create config specifically for Epic 3 hotel descriptions."""
+        """Create config specifically for hotel descriptions."""
         config = cls.from_settings("descriptions")
         # Increase max_tokens for descriptions to avoid truncation
         # Hotel descriptions can be quite long (brief, detailed, marketing formats)
@@ -117,7 +117,7 @@ class LLMConfig:
     
     @classmethod
     def for_summaries(cls) -> LLMConfig:
-        """Create config specifically for Epic 3 legacy summaries."""
+        """Create config specifically for legacy summaries."""
         return cls.from_settings("summaries")
 
     @classmethod
@@ -408,15 +408,15 @@ class LLMFactory:
         return self.create_langfuse_client(LLMConfig.for_validation())
     
     def create_for_extraction(self) -> Any:
-        """Create LangChain ChatOpenAI client specifically configured for Epic 1 extraction."""
+        """Create LangChain ChatOpenAI client specifically configured for extraction."""
         return self.create_chat_llm(LLMConfig.for_extraction())
     
     def create_for_descriptions(self) -> Any:
-        """Create LangChain ChatOpenAI client specifically configured for Epic 3 hotel descriptions."""
+        """Create LangChain ChatOpenAI client specifically configured for hotel descriptions."""
         return self.create_chat_llm(LLMConfig.for_descriptions())
     
     def create_for_summaries(self) -> Any:
-        """Create LangChain ChatOpenAI client specifically configured for Epic 3 legacy summaries."""
+        """Create LangChain ChatOpenAI client specifically configured for legacy summaries."""
         return self.create_chat_llm(LLMConfig.for_summaries())
     
     def create_for_generation(self) -> Any:

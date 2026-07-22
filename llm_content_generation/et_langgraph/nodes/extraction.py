@@ -7,9 +7,9 @@ from llm_content_generation.et_langgraph.models.extraction_models import (
     AspectExtractionResponse,
 )
 
-# Temporary override knob for extraction-prompt A/B testing — set ET87_EXTRACTION_PROMPT_LABEL
-# (or fall back to the broader ET76_PROMPT_LABEL) to pull a non-production
-# label such as `latest`. Sourced from PipelineExtraConfig (ADR-5); resolved
+# Temporary override knob for extraction-prompt A/B testing — set EXTRACTION_PROMPT_LABEL
+# (or fall back to the broader PROMPT_LABEL) to pull a non-production
+# label such as `latest`. Sourced from PipelineExtraConfig; resolved
 # lazily so tests that monkeypatch env vars and reset the cache see overrides.
 def _get_extraction_prompt_label() -> str:
     from llm_content_generation.core.config import get_pipeline_extra_settings
@@ -158,7 +158,7 @@ async def _convert_structured_to_aspects(
     """Convert structured response to legacy aspect format and hotel signals.
 
     Returns:
-        tuple: (aspects, hotel_signals) for backward compatibility and Epic 9 integration
+        tuple: (aspects, hotel_signals) for backward compatibility and hotel-type integration
     """
     aspects: List[Dict[str, Any]] = []
 
@@ -199,7 +199,7 @@ async def _convert_structured_to_aspects(
                 }
             )
 
-    # Epic 9 Integration: Extract hotel signals from both hotel_context and direct hotel_signals
+    # Hotel-type integration: Extract hotel signals from both hotel_context and direct hotel_signals
     hotel_signals: List[Dict[str, Any]] = []
 
     # Method 1: Extract from hotel_context (legacy format)
@@ -446,7 +446,7 @@ async def aspect_extraction_node(state: ContentGenerationState) -> Dict[str, Any
 
     return {
         "extracted_aspects": extracted_aspects,
-        "hotel_context_signals": hotel_context_signals,  # Epic 9 Integration
+        "hotel_context_signals": hotel_context_signals,  # hotel-type integration
         "skipped_reviews_count": skipped_count,
         "processed_review_ids": processed_ids,
     }
