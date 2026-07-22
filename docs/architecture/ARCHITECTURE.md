@@ -146,7 +146,7 @@ flowchart LR
     HZ --> OTEL[OTel collector → Tempo/Loki/Prometheus/Grafana]
 ```
 
-A single image serves the whole stack; ~10 worker services (booking, content, outreach, dispatcher, proxy, cookie, poller…) run against CockroachDB + Redis, with Temporal for durable orchestration and a full self-hosted observability triad. CI gates on ruff, a forward-only mock-ratchet, and pre-commit.
+A single image serves the whole stack; ~10 worker services (extraction, content, outreach, dispatcher, proxy, cookie, poller…) run against CockroachDB + Redis, with Temporal for durable orchestration and a full self-hosted observability triad. CI gates on ruff, a forward-only mock-ratchet, and pre-commit.
 
 A **runnable, sanitized slice** of that observability triad ships in [`infra/observability/`](../../infra/observability/) (`docker compose up` → Grafana with the dashboards + datasources pre-wired), and a sanitized sketch of the full service graph is in [`docs/deployment/topology.docker-compose.yml`](../deployment/topology.docker-compose.yml).
 
