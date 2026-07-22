@@ -37,6 +37,7 @@ This repo is the engineering answer to both, as two coupled product lines:
 
 - **A LangGraph multi-model content pipeline** — ingest hotel data → extract aspects (a fine-tuned ABSA model + LLM) → generate overviews, room descriptions, and review summaries → translate → publish. Each operation is routed to a **different, cost-appropriate model** via an LLM factory.
 - **A Temporal-orchestrated, 5-agent cold-outreach engine** — it mines personalization hooks from reviews, opens a conversation, qualifies replies, and drives a funnel *autonomously* — hardened against the OWASP **LLM Top-10** (prompt injection, output leakage, excessive agency) with a **deterministic, fail-closed "money-action" gate** and a **reproducible red-team + eval harness**.
+- **A resilient distributed fetcher** — the ingestion backbone that reliably pulled hotel data through production-grade, *adaptive* anti-bot defenses (WAF-style rate limiting, IP-reputation bans, fingerprint & bot-challenges): a rotating proxy pool with failover, per-request browser/TLS fingerprint synthesis, circuit breaking, and rate limiting. *Targets and purpose are withheld; a neutral, self-hosted resilience PoC is included — see [below](#resilient-distributed-fetcher).*
 
 **Constraints it was built under:** real production scale and cost pressure (so: multi-model routing + guardrails, not one big model everywhere); durable, resilient execution (Temporal); an autonomous agent that must **never** self-authorize an irreversible action; and strict data-provenance discipline.
 
@@ -48,7 +49,7 @@ This repo is the engineering answer to both, as two coupled product lines:
 |---|---|---|
 | **Content pipeline** (`llm_content_generation/`) | LangGraph `StateGraph` of subgraphs, **per-operation multi-model routing** (`llm_factory`), cost guardrails, ABSA aspect extraction, Langfuse-managed prompts with a local fallback | `make demo-graph` — runs the aspect→content graph on a synthetic hotel with a mock model |
 | **Outreach engine + eval** (`app/leadgen/`, `app/temporal/…/leadgen/`, `scripts/eval/`) | 5-agent durable **Temporal** state machine, **OWASP-LLM** input/output guards (spotlighting + datamarking), a **fail-closed money-gate**, structured Pydantic outputs, and a **red-team + eval harness** | `make eval` — reproduces the deterministic safety properties offline |
-| **Resilient fetcher** (`app/shared/`) | A generic, fault-tolerant distributed HTTP/GraphQL engine: **proxy failover, circuit breaker, token-bucket rate limiting, backoff-with-jitter**, browser-profile management | `make demo-scrape` — runs the engine against a neutral demo backend |
+| **Resilient fetcher** (`app/shared/`) | A generic, fault-tolerant distributed HTTP/GraphQL engine: **proxy rotation + failover, browser/TLS fingerprint synthesis, circuit breaker, token-bucket rate limiting, backoff-with-jitter** — battle-tested in production against adaptive anti-bot defenses | `make demo-resilience` — the real engine vs. a hostile endpoint; `make demo-scrape` — neutral backend |
 
 ## Tech stack
 
@@ -93,7 +94,7 @@ One diagram; the full container/runtime views and the 5-agent sequence diagram a
 | Defending against prompt injection from scraped reviews/replies | Prompt-only "ignore instructions"; a classifier | **Spotlighting + datamarking** (Microsoft) + a **deterministic output leak-guard** | Extra pre/post-processing per turn; some benign inputs get datamarked — worth it for a hard DATA/instruction boundary |
 | Model selection across ~8 operations | One strong model everywhere | **Per-operation routing** via an `llm_factory` + a hard cost guardrail | More config surface and more models to evaluate — but far lower cost and better fit per task |
 | Prompt storage | Hardcode prompts in the repo | **Langfuse** (versioned, evaluated, fetched at runtime) | A runtime dependency — but prompts become versioned, A/B-testable assets, and stay out of source control (which is *why* this showcase can exist) |
-| Showing scraping capability responsibly | Publish the real scraper | **Generic resilient-fetcher engine + neutral demo target**, engineering described in prose | No flashy site-specific demo — but no ToS violation and no "evasion tooling" optics |
+| Showing scraping capability responsibly | Publish the real scraper | **Generic resilient-fetcher engine + a self-hosted hostile-endpoint demo** (`make demo-resilience`) | No site-specific demo — but the resilience is *proven* against a neutral adversary, with no ToS violation or "evasion tooling" optics |
 
 Each row links to a full record under **[docs/adr/](docs/adr)**.
 
@@ -126,6 +127,23 @@ Measured in production against a real 70B model (`llama-3.3-70b-instruct`, temp 
 
 > The offline mock deliberately prints an *illustrative* ~28% router accuracy, clearly labeled — it is **not** rigged to reproduce the 92.2%. The reproducible artifact is the **methodology + the deterministic guarantees**; the accuracy figure is a production measurement you can re-run live.
 
+## Resilient distributed fetcher
+
+Getting hotel data at production scale meant reliably fetching through **adaptive, commercial-grade anti-bot defenses** — WAF-style rate limiting, IP-reputation bans, browser/TLS-fingerprint challenges, and session gating — sustained over long periods and high volume. I designed and built the engine that did it: a **rotating proxy pool with health-based failover**, **per-request browser/TLS fingerprint synthesis** (curl_cffi impersonation), a **circuit breaker**, a **token-bucket rate limiter**, and **backoff-with-jitter**.
+
+**The real targets and business purpose are proprietary and withheld — and this repo ships no site-specific scraper.** What's here is the *reusable engine* plus a neutral, self-hosted proof: `make demo-resilience` stands up a deliberately hostile endpoint (per-proxy IP bans, `429`/`Retry-After`, fingerprint & bot-challenges, transient `500`s) and drives the **real engine components** through it — against a naïve client — fully offline and byte-for-byte deterministic.
+
+| Fetch 60 records through the hostile endpoint | **Engine** | Naïve client |
+|---|---|---|
+| records fetched | **60 / 60 (100%)** | 15 / 60 (25%) |
+| proxy rotations | 3 | 0 |
+| IP-bans (`403`) survived | 3 | 0 — stranded after 3 pages |
+| `429` Retry-After honored | 5 | 0 |
+| transient `500` retried | 1 | 0 |
+| circuit-breaker trips → recoveries | 2 → 2 | 0 → 0 |
+
+The naïve client dies the moment its single proxy is IP-banned; the engine rotates to a fresh proxy, honors every `Retry-After`, backs off with jitter, and recovers its tripped circuit to finish the job. The demo imports the *actual* `CircuitBreaker`, `ProxyManager`, and `SimpleRateLimiter` classes — no reimplementation — so it exercises the same resilience code that ran in production.
+
 ## Quick start
 
 ```bash
@@ -133,6 +151,7 @@ git clone https://github.com/baranlanka/et-hotel-ai-showcase && cd et-hotel-ai-s
 make install         # creates .venv, installs pinned deps
 make eval            # deterministic security eval — offline, no keys, gates on the guarantees
 make demo-graph      # run the content graph on a synthetic hotel (mock model)
+make demo-resilience # anti-bot resilience PoC: the real engine vs. a hostile endpoint
 make demo-scrape     # run the resilient fetcher against a neutral demo backend
 make test            # 171 passed, 1 skipped
 ```
@@ -145,13 +164,13 @@ This is a real production system, so it is shown *responsibly*:
 
 - **Curated prompts are withheld.** The production prompts are curated, versioned, and evaluated in **Langfuse** and are not in this repo. The pipeline ships **generic baseline prompts** (`prompts/baseline/`) that exercise the same code paths — the separation is deliberate and is itself the intended engineering signal.
 - **No real data, no secrets.** Every fixture under `data/` is synthetic and fictional; there are no credentials, real endpoints, or customer data anywhere in the tree (verified with `gitleaks` + `trufflehog`).
-- **The fetcher ships generic.** Scraping a specific site would breach that site's terms; so the reusable **engineering** (proxy failover, circuit breaking, rate limiting, backoff) is shown as a generic engine demonstrated against a **neutral** target — never a site-specific scraper, and framed as reliability engineering, not evasion.
+- **The fetcher ships generic — but is *shown working*.** In production the engine ran against real, adaptive anti-bot defenses; the **targets and purpose are proprietary and withheld**, and this repo contains **no** site-specific scraper. The reusable engine itself is here, and `make demo-resilience` proves it against a **neutral, self-hosted** hostile endpoint — reliability engineering, demonstrated, not evasion tooling against a named site.
 - **Honest numbers.** The deterministic guarantees reproduce offline; the production model-accuracy figures are labeled as production measurements, and the mock is not rigged to fake them.
 
 ## Roadmap / Limitations
 
 - [x] Reproducible, offline, key-free security eval (`make eval`)
-- [x] Runnable content-graph and fetcher demos on synthetic data
+- [x] Runnable content-graph demo + an **anti-bot resilience PoC** (`make demo-resilience`) — offline, deterministic
 - [ ] Hosted live demo (mock-mode) + a recorded `make eval` GIF
 - [ ] `MODEL_BACKEND=ollama` walkthrough reproducing live model metrics
 

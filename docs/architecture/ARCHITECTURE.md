@@ -134,6 +134,7 @@ A single image serves the whole stack; ~10 worker services (booking, content, ou
 | `app/temporal/workflows/leadgen/outreach_conversation_workflow.py` | The durable 5-agent state machine + money-gate |
 | `app/temporal/activities/leadgen/` | The five agents (router, opener, qualifier, miner, …) |
 | `scripts/eval/run_outreach_*.py` | Red-team + eval harnesses |
-| `app/shared/graphql_processing/`, `app/shared/scraping/` | Generic resilient fetcher engine |
+| `app/shared/graphql_processing/`, `app/shared/scraping/` | Generic resilient fetcher engine (proxy rotation, circuit breaker, rate limiter, fingerprinting) |
+| `scripts/demo/demo_resilience.py` + `hostile_endpoint.py` | Anti-bot resilience PoC — drives the real engine through a self-hosted hostile endpoint (`make demo-resilience`) |
 
 See [METHODS.md](../../METHODS.md) for the evaluation methodology and [docs/adr/](../adr) for the decision records.
