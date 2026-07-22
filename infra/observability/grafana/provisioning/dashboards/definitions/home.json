@@ -1,0 +1,70 @@
+{
+  "id": null,
+  "title": "Platform Overview",
+  "tags": ["platform", "overview"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "title": "System Status Overview",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "up{job=~\"loki|tempo|prometheus|otel-collector\"}",
+          "refId": "A",
+          "datasource": {"type": "prometheus", "uid": "prometheus-uid"}
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "red", "value": 0},
+              {"color": "green", "value": 1}
+            ]
+          }
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+    },
+    {
+      "id": 2,
+      "title": "Recent Application Logs",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "{service_name=\"app\"} |= \"ERROR\" or \"WARN\"",
+          "refId": "A",
+          "datasource": {"type": "loki", "uid": "loki-uid"}
+        }
+      ],
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 8}
+    },
+    {
+      "id": 3,
+      "title": "Active Workflows",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "{service_name=\"app\"} | json | workflow_id != \"\"",
+          "refId": "A",
+          "datasource": {"type": "loki", "uid": "loki-uid"}
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+    }
+  ],
+  "time": {"from": "now-1h", "to": "now"},
+  "refresh": "30s",
+  "meta": {
+    "type": "db",
+    "canSave": true,
+    "canEdit": true,
+    "canAdmin": true,
+    "canStar": true,
+    "slug": "platform-overview",
+    "url": "/d/platform-overview/platform-overview",
+    "version": 1
+  }
+}

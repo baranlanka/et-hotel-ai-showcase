@@ -21,7 +21,7 @@ A design-and-evaluation write-up for the reader who wants the reasoning, not jus
 | Bet | Why |
 |---|---|
 | **Temporal** durable workflows for the agent conversations | Long-lived, resumable, replayable state with retries and circuit breakers — the conversation *is* the workflow |
-| **LangGraph** `StateGraph` + an **`llm_factory`** routing each operation to a cost-appropriate model | Different tasks (extraction vs. vision vs. long-form generation) have different quality/cost sweet spots |
+| **LangGraph** `StateGraph` + an **`llm_factory`** routing each operation to a **small, cheap open model** (DeepSeek / Qwen / Llama) — never a frontier model | The achievement is production quality *without* GPT-5/Claude; different tasks (extraction vs. vision vs. long-form) have different quality/cost sweet spots, and cost matters at scale |
 | **Defense-in-depth guardrails** (spotlighting/datamarking input guard, deterministic output leak-guard, model-layer validators) | Untrusted text enters from reviews and replies; a single prompt-level "ignore instructions" is not a control |
 | **A deterministic, fail-closed money-gate** | Safety of an irreversible action must not depend on model judgment or a mutable config flag |
 | **Langfuse** for prompt management | Prompts become versioned, evaluated, A/B-testable assets — and stay out of source control |
@@ -82,6 +82,7 @@ The mock backend is deterministic and **not rigged**: it returns a fixed neutral
 
 ## 6. Trade-offs & lessons
 
+- **Small models were a deliberate constraint, not a limitation.** Every output was produced with cheap open models (DeepSeek / Qwen / Llama), never GPT-5 or Claude. The quality came from per-operation routing, prompt curation, structured outputs, and guardrails — not model size. A frontier model would have made the task trivial and far costlier; doing it on small models is the point.
 - **Determinism where it counts.** The most valuable safety property (never auto-commit a money action) is enforced by a *constant*, not a model decision — the boring choice is the correct one.
 - **Datamarking has a false-positive cost** (some benign inputs get marked); accepted, because a hard DATA/instruction boundary is worth more than marginal cleanliness.
 - **Multi-model routing pays for its config complexity** in cost at scale, but demands an eval per operation to avoid silent quality regressions.

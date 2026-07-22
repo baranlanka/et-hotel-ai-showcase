@@ -4,9 +4,10 @@
 
 **A production hotel/travel AI platform: it turns raw hotel data into published multilingual listings, and runs safe, autonomous cold-outreach to recruit hotels — built ground-up at Effective Tours.**
 
-[▶ Reproduce the eval](#results--evaluation) · [Architecture](docs/architecture/ARCHITECTURE.md) · [Methods & case study](METHODS.md) · [Decision records](docs/adr)
+[**▶ Live demo**](https://et-hotel-ai-showcase.streamlit.app) · [Reproduce the eval](#results--evaluation) · [Architecture](docs/architecture/ARCHITECTURE.md) · [Methods](METHODS.md) · [Decision records](docs/adr)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/baranlanka/et-hotel-ai-showcase/ci.yml?branch=main&label=CI)](https://github.com/baranlanka/et-hotel-ai-showcase/actions)
+[![Live demo](https://img.shields.io/badge/live%20demo-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://et-hotel-ai-showcase.streamlit.app)
 [![eval](https://img.shields.io/badge/eval-reproducible%20offline-brightgreen)](#results--evaluation)
 ![Python](https://img.shields.io/badge/python-3.12+-3776AB?logo=python&logoColor=white)
 [![License: MIT](https://img.shields.io/github/license/baranlanka/et-hotel-ai-showcase)](LICENSE)
@@ -29,6 +30,8 @@ A. DETERMINISTIC SECURITY / GUARD ASSERTIONS  (gate the exit code)
  RESULT: deterministic assertions ALL PASS  ->  exit 0
 ```
 
+> **▶ Try it live** — an interactive Streamlit dashboard with an **LLM-safety playground** (paste a hostile message and watch the *real* guards catch it), the anti-bot resilience demo, and the content pipeline: **[et-hotel-ai-showcase.streamlit.app](https://et-hotel-ai-showcase.streamlit.app)** — or run it locally with `streamlit run streamlit_app.py`.
+
 ## Overview
 
 Effective Tours needed two things a small team can't do by hand at scale: **(1)** produce rich, accurate, *multilingual* content for tens of thousands of hotels, and **(2)** find and recruit new hotels through personalized outreach — without a human writing every message, and **without ever letting an autonomous agent take a money-committing action on its own.**
@@ -38,6 +41,8 @@ This repo is the engineering answer to both, as two coupled product lines:
 - **A LangGraph multi-model content pipeline** — ingest hotel data → extract aspects (a fine-tuned ABSA model + LLM) → generate overviews, room descriptions, and review summaries → translate → publish. Each operation is routed to a **different, cost-appropriate model** via an LLM factory.
 - **A Temporal-orchestrated, 5-agent cold-outreach engine** — it mines personalization hooks from reviews, opens a conversation, qualifies replies, and drives a funnel *autonomously* — hardened against the OWASP **LLM Top-10** (prompt injection, output leakage, excessive agency) with a **deterministic, fail-closed "money-action" gate** and a **reproducible red-team + eval harness**.
 - **A resilient distributed fetcher** — the ingestion backbone that reliably pulled hotel data through production-grade, *adaptive* anti-bot defenses (WAF-style rate limiting, IP-reputation bans, fingerprint & bot-challenges): a rotating proxy pool with failover, per-request browser/TLS fingerprint synthesis, circuit breaking, and rate limiting. *Targets and purpose are withheld; a neutral, self-hosted resilience PoC is included — see [below](#resilient-distributed-fetcher).*
+
+> **Small-model engineering — deliberately hard mode.** Every result here was produced with *small, cheap, open* models — DeepSeek's budget tiers, Qwen, and Llama (extraction) via OpenRouter — **not GPT-5 or Claude Sonnet.** Hitting production quality on small models (through per-operation routing, curated prompting, structured outputs, and hard guardrails) *is* the engineering — a frontier model would make the same task trivial and cost far more. The system was built to run cheap and stay in control.
 
 **Constraints it was built under:** real production scale and cost pressure (so: multi-model routing + guardrails, not one big model everywhere); durable, resilient execution (Temporal); an autonomous agent that must **never** self-authorize an irreversible action; and strict data-provenance discipline.
 
@@ -50,6 +55,8 @@ This repo is the engineering answer to both, as two coupled product lines:
 | **Content pipeline** (`llm_content_generation/`) | LangGraph `StateGraph` of subgraphs, **per-operation multi-model routing** (`llm_factory`), cost guardrails, ABSA aspect extraction, Langfuse-managed prompts with a local fallback | `make demo-graph` — runs the aspect→content graph on a synthetic hotel with a mock model |
 | **Outreach engine + eval** (`app/leadgen/`, `app/temporal/…/leadgen/`, `scripts/eval/`) | 5-agent durable **Temporal** state machine, **OWASP-LLM** input/output guards (spotlighting + datamarking), a **fail-closed money-gate**, structured Pydantic outputs, and a **red-team + eval harness** | `make eval` — reproduces the deterministic safety properties offline |
 | **Resilient fetcher** (`app/shared/`) | A generic, fault-tolerant distributed HTTP/GraphQL engine: **proxy rotation + failover, browser/TLS fingerprint synthesis, circuit breaker, token-bucket rate limiting, backoff-with-jitter** — battle-tested in production against adaptive anti-bot defenses | `make demo-resilience` — the real engine vs. a hostile endpoint; `make demo-scrape` — neutral backend |
+
+Plus a **runnable, sanitized observability stack** (`infra/observability/` — OpenTelemetry → Tempo/Loki/Prometheus → Grafana; `docker compose up`) and an [illustrative service-topology compose](docs/deployment/topology.docker-compose.yml).
 
 ## Tech stack
 
@@ -92,7 +99,7 @@ One diagram; the full container/runtime views and the 5-agent sequence diagram a
 | Orchestrating autonomous, long-lived agent conversations | Celery / raw queues + a state column; ad-hoc async | **Temporal** durable workflows | Operational weight of a Temporal cluster, and workflow-determinism discipline — bought durability, retries, and replayable state |
 | Letting an agent take a money-committing action (`send_D`) | Trust the model + a confidence threshold | **Deterministic fail-closed gate** — every `send_D` is force-routed to human approval; the switch changes only via reviewed code, never an env var | The agent is never fully autonomous on irreversible actions (by design — this is the point) |
 | Defending against prompt injection from scraped reviews/replies | Prompt-only "ignore instructions"; a classifier | **Spotlighting + datamarking** (Microsoft) + a **deterministic output leak-guard** | Extra pre/post-processing per turn; some benign inputs get datamarked — worth it for a hard DATA/instruction boundary |
-| Model selection across ~8 operations | One strong model everywhere | **Per-operation routing** via an `llm_factory` + a hard cost guardrail | More config surface and more models to evaluate — but far lower cost and better fit per task |
+| Model selection across ~8 operations | A single **frontier** model (GPT-5 / Claude) everywhere | **Per-operation routing to small, cheap open models** (DeepSeek / Qwen / Llama) via an `llm_factory` + a hard cost guardrail | More config + an eval per operation — but a fraction of the cost, and it *proves* the engineering rather than leaning on a big model |
 | Prompt storage | Hardcode prompts in the repo | **Langfuse** (versioned, evaluated, fetched at runtime) | A runtime dependency — but prompts become versioned, A/B-testable assets, and stay out of source control (which is *why* this showcase can exist) |
 | Showing scraping capability responsibly | Publish the real scraper | **Generic resilient-fetcher engine + a self-hosted hostile-endpoint demo** (`make demo-resilience`) | No site-specific demo — but the resilience is *proven* against a neutral adversary, with no ToS violation or "evasion tooling" optics |
 
@@ -154,6 +161,7 @@ make demo-graph      # run the content graph on a synthetic hotel (mock model)
 make demo-resilience # anti-bot resilience PoC: the real engine vs. a hostile endpoint
 make demo-scrape     # run the resilient fetcher against a neutral demo backend
 make test            # 171 passed, 1 skipped
+streamlit run streamlit_app.py   # the interactive dashboard (safety playground, demos, eval)
 ```
 
 No API keys are required — the default `MODEL_BACKEND=mock` is deterministic and offline. To see live generation, set `MODEL_BACKEND=ollama` (local) or `MODEL_BACKEND=openrouter` (a key) in `.env` (copy from `.env.example`).
@@ -171,7 +179,8 @@ This is a real production system, so it is shown *responsibly*:
 
 - [x] Reproducible, offline, key-free security eval (`make eval`)
 - [x] Runnable content-graph demo + an **anti-bot resilience PoC** (`make demo-resilience`) — offline, deterministic
-- [ ] Hosted live demo (mock-mode) + a recorded `make eval` GIF
+- [x] Interactive hosted dashboard (Streamlit, mock-mode) — safety playground + live demos + eval
+- [x] Runnable, sanitized observability stack (`infra/observability/`)
 - [ ] `MODEL_BACKEND=ollama` walkthrough reproducing live model metrics
 
 **Known limitations (honest):** this is a *slice*, not the whole platform — the vision/image tail, the CMS/publishing integration, and the real orchestration wiring are out of scope here. The offline demo uses a mock model, so it proves the *architecture and the deterministic safety properties*, not model quality. The full production system (durable orchestration, distributed SQL, observability triad, CD) is described in [METHODS.md](METHODS.md) and the ADRs rather than shipped.

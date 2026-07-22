@@ -1,0 +1,193 @@
+# Illustrative topology — not wired to run as-is; shows the production service graph.
+#
+# This is a SANITIZED sketch of how the production platform is composed: one
+# container image serves the FastAPI API plus ~10 background workers, backed by
+# CockroachDB, Redis and Temporal (durable orchestration), all emitting telemetry
+# into the observability stack in ../../infra/observability/.
+#
+# Genericized on purpose — image refs are `ghcr.io/OWNER/app:...` placeholders,
+# service names are generic roles, and every host/registry/secret/CD-tool
+# specific detail has been removed. To actually run the observability triad,
+# use ../../infra/observability/docker-compose.yml (that one is real and runnable).
+#
+# In production a single CI-built image (build once, run everywhere) is pulled by
+# the CD system and started with an overlay that nullifies `build:`; here we show
+# `build: .` for the API and `image:` placeholders for the workers to make the
+# one-image / many-roles shape explicit.
+
+x-app-image: &app-image "ghcr.io/OWNER/app:main"
+
+x-worker-defaults: &worker-defaults
+  image: *app-image
+  env_file:
+    - path: .env
+      required: false
+  networks:
+    - default
+  restart: unless-stopped
+  depends_on:
+    - temporal
+    - cockroachdb
+
+services:
+  # --- API -------------------------------------------------------------------
+  app:
+    build: .            # local dev builds; prod runs the pulled *app-image
+    image: *app-image
+    command: uvicorn app.fastapi_app:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+      # App Prometheus metrics — bound to loopback only.
+      - "127.0.0.1:9200:9200"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - TEMPORAL_HOST=${TEMPORAL_HOST:-temporal:7233}
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4317}
+    env_file:
+      - path: .env
+        required: false
+    networks:
+      - default
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - cockroachdb
+      - redis
+      - temporal
+
+  # --- Workers (one image, distinct entrypoints) -----------------------------
+  # Durable Temporal workers + a couple of plain asyncio dispatchers/pollers.
+  worker-sync:
+    <<: *worker-defaults
+    command: python app/workers/run_sync_worker.py
+
+  worker-dispatcher:
+    <<: *worker-defaults
+    command: python app/workers/run_dispatcher_worker.py
+
+  worker-content:
+    <<: *worker-defaults
+    command: python app/workers/run_content_worker.py
+
+  worker-session:
+    <<: *worker-defaults
+    command: python app/workers/run_session_worker.py
+
+  worker-proxy:
+    <<: *worker-defaults
+    command: python app/workers/run_proxy_worker.py
+
+  worker-outreach:
+    <<: *worker-defaults
+    command: python app/workers/run_outreach_worker.py
+
+  worker-outreach-dispatcher:
+    <<: *worker-defaults
+    command: python app/workers/run_outreach_dispatcher_worker.py
+
+  worker-outreach-conversation:
+    <<: *worker-defaults
+    command: python app/workers/run_outreach_conversation_worker.py
+
+  worker-reply-poller:
+    <<: *worker-defaults
+    command: python app/workers/run_reply_poller.py
+
+  # --- Stateful backing services ---------------------------------------------
+  cockroachdb:
+    image: cockroachdb/cockroach:latest
+    command: start-single-node --insecure
+    ports:
+      - "26257:26257"   # SQL
+      - "8081:8080"     # admin UI
+    volumes:
+      - cockroach_data:/cockroach/cockroach-data
+    networks:
+      - default
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    networks:
+      - default
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # --- Durable orchestration (Temporal) --------------------------------------
+  temporal:
+    image: temporalio/auto-setup:1.24.2
+    ports:
+      - "7233:7233"
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=${TEMPORAL_DB_USER:-temporal}
+      - POSTGRES_PWD=${TEMPORAL_DB_PASSWORD:-temporal}
+      - POSTGRES_SEEDS=postgres-temporal
+    networks:
+      - default
+    depends_on:
+      - postgres-temporal
+    restart: unless-stopped
+
+  postgres-temporal:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=${TEMPORAL_DB_USER:-temporal}
+      - POSTGRES_PASSWORD=${TEMPORAL_DB_PASSWORD:-temporal}
+    volumes:
+      - temporal_data:/var/lib/postgresql/data
+    networks:
+      - default
+    restart: unless-stopped
+
+  temporal-ui:
+    image: temporalio/ui:2.26.2
+    ports:
+      - "8088:8080"
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+    networks:
+      - default
+    depends_on:
+      - temporal
+    restart: unless-stopped
+
+  # --- Observability triad ---------------------------------------------------
+  # Shown here as part of the graph; the runnable, fully-configured versions live
+  # in ../../infra/observability/ (otel-collector, tempo, loki, promtail,
+  # prometheus, grafana). Prefer running that stack directly.
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.128.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ../../infra/observability/otel-collector/collector-config.yaml:/etc/otelcol/config.yaml:ro
+    networks:
+      - default
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+    networks:
+      - default
+    restart: unless-stopped
+
+volumes:
+  cockroach_data:
+  temporal_data:
+
+networks:
+  default:

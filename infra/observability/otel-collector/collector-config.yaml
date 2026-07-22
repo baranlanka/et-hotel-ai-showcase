@@ -1,0 +1,73 @@
+# OpenTelemetry Collector — receives OTLP from the app + workers, fans out to
+# Tempo (traces), Loki (logs) and a Prometheus exporter (metrics).
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+    compression: gzip
+
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+    headers:
+      Content-Type: application/json
+    default_labels_enabled:
+      exporter: false
+      job: true
+
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+
+  debug:
+    verbosity: detailed
+
+processors:
+  batch:
+    send_batch_size: 1024
+    timeout: 1s
+    send_batch_max_size: 2048
+
+  resource:
+    attributes:
+      - key: collector.name
+        value: otel-collector
+        action: insert
+      - key: collector.version
+        value: 0.128.0
+        action: insert
+
+  memory_limiter:
+    limit_mib: 512
+    spike_limit_mib: 128
+    check_interval: 1s
+
+service:
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      level: detailed
+
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [loki, debug]
+
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlp/tempo, debug]
+
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [prometheus, debug]

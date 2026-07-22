@@ -1,0 +1,30 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  # Prometheus self-monitoring.
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # OpenTelemetry Collector — internal telemetry (:8888) + the exported
+  # application/worker metrics pipeline (:8889).
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector:8888', 'otel-collector:8889']
+
+  # Tempo self-monitoring (trace ingestion / query metrics).
+  - job_name: 'tempo'
+    static_configs:
+      - targets: ['tempo:3200']
+
+  # Application API — generic service name. Down until an app is attached;
+  # kept here to show the production scrape-job shape.
+  - job_name: 'app'
+    static_configs:
+      - targets: ['app:9200']
+
+  # Background workers — a single job with a generic target list.
+  - job_name: 'worker'
+    static_configs:
+      - targets: ['worker-content:9000', 'worker-dispatcher:9000']

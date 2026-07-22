@@ -1,0 +1,137 @@
+# Self-contained observability stack — the LGTM-style triad the production
+# platform runs (OpenTelemetry Collector -> Tempo/Loki/Prometheus -> Grafana).
+#
+#   docker compose up -d
+#   open http://localhost:3000        # Grafana (anonymous access, dashboards pre-loaded)
+#
+# No application or business services are included. The data sources are wired
+# and the dashboards load; panels stay idle until an app points its OTLP exporter
+# at otel-collector:4317 (gRPC) / :4318 (HTTP). All credentials are env
+# placeholders with safe local defaults.
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.128.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otel-collector/collector-config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP/gRPC receiver
+      - "4318:4318"   # OTLP/HTTP receiver
+      - "8888:8888"   # collector internal telemetry
+      - "8889:8889"   # prometheus exporter (app/worker metrics)
+    environment:
+      - TZ=UTC
+    restart: unless-stopped
+    networks:
+      - observability-net
+    depends_on:
+      - tempo
+      - loki
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+    ports:
+      - "3200:3200"   # Tempo query frontend
+    environment:
+      - TZ=UTC
+    restart: unless-stopped
+    networks:
+      - observability-net
+
+  loki:
+    image: grafana/loki:3.3.2
+    command:
+      - -config.file=/etc/loki/loki-config.yaml
+      - -config.expand-env=true
+    volumes:
+      - ./loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+      - "9096:9096"
+    environment:
+      - TZ=UTC
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - observability-net
+
+  promtail:
+    image: grafana/promtail:3.3.2
+    command: ["-config.file=/etc/promtail/config.yaml"]
+    volumes:
+      - ./promtail/promtail-config.yaml:/etc/promtail/config.yaml:ro
+      # Point LOG_DIR at your app's log directory; defaults to the empty ./logs
+      # dir shipped here so the stack starts with no logs to tail (idle).
+      - ${LOG_DIR:-./logs}:/var/log/app:ro
+    environment:
+      - TZ=UTC
+    restart: unless-stopped
+    depends_on:
+      - loki
+    networks:
+      - observability-net
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    environment:
+      - TZ=UTC
+    restart: unless-stopped
+    networks:
+      - observability-net
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    environment:
+      GF_PATHS_CONFIG: "/etc/grafana/grafana.ini"
+      GF_PATHS_PROVISIONING: "/etc/grafana/provisioning"
+      # Credentials + session secret are injected here, never committed to
+      # grafana.ini. Override via a local .env for anything non-local.
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-admin}"
+      GF_SECURITY_SECRET_KEY: "${GRAFANA_SECRET_KEY:-changeme-local-only}"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+      GF_FEATURE_TOGGLES_ENABLE: "traceqlEditor,tempoServiceGraph,tempoApmTable"
+      TZ: "UTC"
+    volumes:
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini:ro
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - loki
+      - tempo
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - observability-net
+
+networks:
+  observability-net:
+    driver: bridge
+    name: observability-net
+
+volumes:
+  loki_data:
+  prometheus_data:
+  grafana_data:

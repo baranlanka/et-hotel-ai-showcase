@@ -16,5 +16,10 @@ temporalio==1.30.0
 curl_cffi==0.15.0
 httpx==0.28.1
 click==8.4.2
+# Interactive showcase dashboard (Streamlit Community Cloud entrypoint:
+# streamlit_app.py). Runs the app fully offline on MODEL_BACKEND=mock — no keys,
+# no network. The architecture diagram loads mermaid.js client-side (browser CDN),
+# so no extra Python component dependency is required.
+streamlit==1.60.0
 pytest==9.1.1
 pytest-asyncio==1.4.0

@@ -507,6 +507,64 @@ async def _amain() -> int:
         server.stop()
 
 
+def _metrics_to_dict(m: RunMetrics) -> Dict[str, Any]:
+    """Flatten a :class:`RunMetrics` (fields + derived properties) to a plain dict.
+
+    Used by :func:`run_demo` so a caller (e.g. a UI / notebook) gets every measured
+    number, including the computed ``total_http`` / ``success_rate`` properties that
+    ``dataclasses.asdict`` would omit.
+    """
+    from dataclasses import fields as _fields
+
+    out: Dict[str, Any] = {f.name: getattr(m, f.name) for f in _fields(m)}
+    out["total_http"] = m.total_http
+    out["success_rate"] = m.success_rate
+    return out
+
+
+async def _run_demo_async() -> Dict[str, Any]:
+    """Start the hostile endpoint, run ENGINE then NAIVE, return measured metrics."""
+    config = HostileConfig()
+    server = HostileServer(config)
+    server.start()
+    try:
+        server.reset()
+        engine = await run_engine(server)
+        server.reset()
+        naive = await run_naive(server)
+        return {
+            "url": server.url,
+            "target": config.total_records,
+            "page_size": config.page_size,
+            "k_ban": config.k_ban,
+            "seed": config.seed,
+            "engine": _metrics_to_dict(engine),
+            "naive": _metrics_to_dict(naive),
+            "engine_collected_all": engine.records == engine.target,
+            "naive_failed": naive.records < naive.target,
+        }
+    finally:
+        server.stop()
+
+
+def run_demo() -> Dict[str, Any]:
+    """Run the resilience PoC and return the measured ENGINE-vs-NAIVE metrics.
+
+    A thin, import-friendly wrapper around the same :func:`run_engine` /
+    :func:`run_naive` loops the CLI (:func:`main`) drives — every number is
+    measured live against the deterministic, offline :class:`HostileServer`, so
+    the result is byte-for-byte reproducible. No network, no API keys.
+
+    Returns:
+        A dict with ``engine`` / ``naive`` metric dicts (records, success_rate,
+        rotations, bans_survived, retry_after_events, circuit_trips/recoveries,
+        HTTP status tallies, wall_clock_s, …) plus the demo config
+        (``target`` / ``page_size`` / ``k_ban`` / ``seed``) and two booleans
+        (``engine_collected_all``, ``naive_failed``).
+    """
+    return asyncio.run(_run_demo_async())
+
+
 def main() -> None:
     raise SystemExit(asyncio.run(_amain()))
 

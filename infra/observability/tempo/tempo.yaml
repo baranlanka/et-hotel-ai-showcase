@@ -1,0 +1,61 @@
+# Tempo — single-binary, local-filesystem trace store with the metrics-generator
+# on (service-graph + span-metrics feed the Prometheus datasource).
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 9096
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+ingester:
+  max_block_duration: 5m
+  max_block_bytes: 1_000_000
+  complete_block_timeout: 10m
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /tmp/tempo-data
+    wal:
+      path: /tmp/tempo-wal
+    pool:
+      max_workers: 100
+      queue_depth: 10000
+
+compactor:
+  compaction:
+    compaction_window: 1h
+    max_block_bytes: 100_000_000
+    block_retention: 168h
+    compacted_block_retention: 1h
+  ring:
+    kvstore:
+      store: inmemory
+
+query_frontend:
+  search:
+    max_duration: 0s
+
+querier:
+  max_concurrent_queries: 20
+
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+      cluster: docker-local
+  storage:
+    path: /tmp/tempo-data/generator/wal
+    remote_write_flush_deadline: 1m
+
+overrides:
+  metrics_generator_processors: [service-graphs, span-metrics]
+  max_traces_per_user: 10000
+  max_bytes_per_trace: 50000000

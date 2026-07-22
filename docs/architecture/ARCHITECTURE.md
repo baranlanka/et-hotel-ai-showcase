@@ -123,6 +123,8 @@ flowchart LR
 
 A single image serves the whole stack; ~10 worker services (booking, content, outreach, dispatcher, proxy, cookie, poller…) run against CockroachDB + Redis, with Temporal for durable orchestration and a full self-hosted observability triad. CI gates on ruff, a forward-only mock-ratchet, and pre-commit.
 
+A **runnable, sanitized slice** of that observability triad ships in [`infra/observability/`](../../infra/observability/) (`docker compose up` → Grafana with the dashboards + datasources pre-wired), and a sanitized sketch of the full service graph is in [`docs/deployment/topology.docker-compose.yml`](../deployment/topology.docker-compose.yml).
+
 ## 5. Key module map (showcase)
 
 | Path | Role |
@@ -136,5 +138,6 @@ A single image serves the whole stack; ~10 worker services (booking, content, ou
 | `scripts/eval/run_outreach_*.py` | Red-team + eval harnesses |
 | `app/shared/graphql_processing/`, `app/shared/scraping/` | Generic resilient fetcher engine (proxy rotation, circuit breaker, rate limiter, fingerprinting) |
 | `scripts/demo/demo_resilience.py` + `hostile_endpoint.py` | Anti-bot resilience PoC — drives the real engine through a self-hosted hostile endpoint (`make demo-resilience`) |
+| `infra/observability/` | Runnable, sanitized telemetry stack — OTel Collector → Tempo/Loki/Prometheus → Grafana (`docker compose up`); see its [README](../../infra/observability/README.md) |
 
 See [METHODS.md](../../METHODS.md) for the evaluation methodology and [docs/adr/](../adr) for the decision records.

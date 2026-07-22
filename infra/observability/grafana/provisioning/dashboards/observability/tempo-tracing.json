@@ -1,0 +1,98 @@
+{
+  "id": null,
+  "title": "Tempo Distributed Tracing Dashboard",
+  "tags": ["tempo", "tracing", "performance"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Trace Ingestion Rate",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(tempo_distributor_spans_received_total[5m]))",
+          "refId": "A",
+          "datasource": {"type": "prometheus", "uid": "prometheus-uid"}
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {"drawStyle": "line", "fillOpacity": 10},
+          "unit": "reqps"
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+    },
+    {
+      "id": 2,
+      "title": "Query Latency (p99)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(tempo_query_frontend_duration_seconds_bucket[5m])) by (le))",
+          "refId": "A",
+          "datasource": {"type": "prometheus", "uid": "prometheus-uid"}
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+    },
+    {
+      "id": 3,
+      "title": "Service Map",
+      "type": "nodeGraph",
+      "targets": [
+        {
+          "queryType": "nativeSearch",
+          "refId": "A",
+          "datasource": {"type": "tempo", "uid": "tempo-uid"}
+        }
+      ],
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 8}
+    },
+    {
+      "id": 4,
+      "title": "Top Services by Span Count",
+      "type": "table",
+      "targets": [
+        {
+          "queryType": "traceql",
+          "query": "{ } | by(resource.service.name) | count() > 0",
+          "refId": "A",
+          "datasource": {"type": "tempo", "uid": "tempo-uid"}
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20}
+    },
+    {
+      "id": 5,
+      "title": "Error Traces",
+      "type": "table",
+      "targets": [
+        {
+          "queryType": "traceql",
+          "query": "{ status = error }",
+          "refId": "A",
+          "datasource": {"type": "tempo", "uid": "tempo-uid"}
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20}
+    }
+  ],
+  "time": {"from": "now-1h", "to": "now"},
+  "refresh": "30s",
+  "meta": {
+    "type": "db",
+    "canSave": true,
+    "canEdit": true,
+    "canAdmin": true,
+    "canStar": true,
+    "slug": "tempo-tracing",
+    "url": "/d/tempo-tracing/tempo-distributed-tracing-dashboard",
+    "version": 1
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "id": null,
+  "title": "Application Overview",
+  "tags": ["application", "api", "workers"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "title": "API Requests per Minute",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{path=~\"/api/v1/.*\"}[1m])) * 60",
+          "refId": "A",
+          "datasource": {"type": "prometheus", "uid": "prometheus-uid"}
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {"drawStyle": "line", "fillOpacity": 10},
+          "unit": "reqpm"
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+    },
+    {
+      "id": 2,
+      "title": "Request Success Rate",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{path=~\"/api/v1/.*\", status=~\"2..\"}[5m])) / sum(rate(http_requests_total{path=~\"/api/v1/.*\"}[5m])) * 100",
+          "refId": "A",
+          "datasource": {"type": "prometheus", "uid": "prometheus-uid"}
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "red", "value": 0},
+              {"color": "yellow", "value": 95},
+              {"color": "green", "value": 99}
+            ]
+          }
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+    },
+    {
+      "id": 3,
+      "title": "Search Response Time (p95)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{path=~\"/api/v1/search.*\"}[5m])) by (le))",
+          "refId": "A",
+          "datasource": {"type": "prometheus", "uid": "prometheus-uid"}
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+    },
+    {
+      "id": 4,
+      "title": "Content Worker Status",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "{service_name=\"worker-content\"} | json | status != \"\"",
+          "refId": "A",
+          "datasource": {"type": "loki", "uid": "loki-uid"}
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+    },
+    {
+      "id": 5,
+      "title": "Recent Application Errors",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "{service_name=\"app\"} |= \"ERROR\"",
+          "refId": "A",
+          "datasource": {"type": "loki", "uid": "loki-uid"}
+        }
+      ],
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 16}
+    }
+  ],
+  "time": {"from": "now-1h", "to": "now"},
+  "refresh": "30s",
+  "meta": {
+    "type": "db",
+    "canSave": true,
+    "canEdit": true,
+    "canAdmin": true,
+    "canStar": true,
+    "slug": "app-overview",
+    "url": "/d/app-overview/application-overview",
+    "version": 1
+  }
+}

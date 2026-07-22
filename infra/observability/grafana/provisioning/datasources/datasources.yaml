@@ -1,0 +1,111 @@
+# Grafana datasources — provisioned so Loki, Tempo and Prometheus are wired
+# together out of the box (logs -> traces via derived fields, traces -> logs and
+# traces -> metrics via the Tempo correlations).
+apiVersion: 1
+
+# Delete existing data sources before provisioning
+deleteDatasources:
+  - name: Loki
+    orgId: 1
+  - name: Tempo
+    orgId: 1
+  - name: Prometheus
+    orgId: 1
+
+datasources:
+  # Loki - Log Aggregation
+  - name: Loki
+    type: loki
+    access: proxy
+    orgId: 1
+    uid: loki-uid
+    url: http://loki:3100
+    isDefault: false
+    version: 1
+    editable: true
+    jsonData:
+      maxLines: 1000
+      timeout: 60
+      derivedFields:
+        - datasourceUid: tempo-uid
+          matcherRegex: "trace_id=(\\w+)"
+          name: trace_id
+          url: "$${__value.raw}"
+          urlDisplayLabel: "View Trace"
+    secureJsonFields: {}
+
+  # Tempo - Distributed Tracing
+  - name: Tempo
+    type: tempo
+    access: proxy
+    orgId: 1
+    uid: tempo-uid
+    url: http://tempo:3200
+    isDefault: false
+    version: 1
+    editable: true
+    jsonData:
+      httpMethod: GET
+      tracesToLogs:
+        datasourceUid: loki-uid
+        tags: ['job', 'instance', 'pod', 'namespace', 'service_name']
+        mappedTags: [
+          { key: 'service.name', value: 'service_name' },
+          { key: 'service.namespace', value: 'namespace' }
+        ]
+        mapTagNamesEnabled: true
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+        filterByTraceID: true
+        filterBySpanID: false
+        lokiSearch: true
+        queries:
+          - refId: A
+            expr: '{$${__tags}} |= `$${__trace.traceId}`'
+            queryType: ''
+            datasource:
+              type: loki
+              uid: loki-uid
+      tracesToMetrics:
+        datasourceUid: prometheus-uid
+        tags: [
+          { key: 'service.name', value: 'service_name' },
+          { key: 'job', value: 'job' }
+        ]
+        queries:
+          - refId: A
+            expr: 'histogram_quantile(0.5, sum(rate(traces_spanmetrics_latency_bucket{$${__tags}}[5m])) by (le))'
+            queryType: ''
+            datasource:
+              type: prometheus
+              uid: prometheus-uid
+      search:
+        hide: false
+      nodeGraph:
+        enabled: true
+      serviceMap:
+        datasourceUid: prometheus-uid
+      spanBar:
+        type: Tag
+        tag: http.status_code
+    secureJsonFields: {}
+
+  # Prometheus - Metrics
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    orgId: 1
+    uid: prometheus-uid
+    url: http://prometheus:9090
+    isDefault: true
+    version: 1
+    editable: true
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 60s
+      timeInterval: 15s
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: tempo-uid
+          urlDisplayLabel: "View trace"
+    secureJsonFields: {}

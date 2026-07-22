@@ -1,0 +1,97 @@
+{
+  "id": null,
+  "title": "OpenTelemetry Collector Monitoring",
+  "tags": ["otel", "collector", "telemetry"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Data Processing Rate",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(otelcol_processor_batch_batch_send_size_sum[5m])) by (processor)",
+          "refId": "A",
+          "datasource": {"type": "prometheus", "uid": "prometheus-uid"}
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {"drawStyle": "line", "fillOpacity": 10},
+          "unit": "reqps"
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+    },
+    {
+      "id": 2,
+      "title": "Receiver Success Rate",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "rate(otelcol_receiver_accepted_spans_total[5m]) / rate(otelcol_receiver_received_spans_total[5m]) * 100",
+          "refId": "A",
+          "datasource": {"type": "prometheus", "uid": "prometheus-uid"}
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "red", "value": 0},
+              {"color": "yellow", "value": 95},
+              {"color": "green", "value": 99}
+            ]
+          }
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+    },
+    {
+      "id": 3,
+      "title": "Export Queue Size",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "otelcol_exporter_queue_size",
+          "refId": "A",
+          "datasource": {"type": "prometheus", "uid": "prometheus-uid"}
+        }
+      ],
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+    },
+    {
+      "id": 4,
+      "title": "Failed Exports",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(otelcol_exporter_send_failed_spans_total[5m])) by (exporter)",
+          "refId": "A",
+          "datasource": {"type": "prometheus", "uid": "prometheus-uid"}
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"axisPlacement": "right"}
+        }
+      },
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16}
+    }
+  ],
+  "time": {"from": "now-1h", "to": "now"},
+  "refresh": "30s",
+  "meta": {
+    "type": "db",
+    "canSave": true,
+    "canEdit": true,
+    "canAdmin": true,
+    "canStar": true,
+    "slug": "otel-collector",
+    "url": "/d/otel-collector/opentelemetry-collector-monitoring",
+    "version": 1
+  }
+}
