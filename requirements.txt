@@ -1,19 +1,20 @@
-# et-hotel-ai-showcase — runtime + test dependencies.
+# et-hotel-ai-showcase — runtime + test dependencies (pinned for reproducibility).
 # Install into the project venv:  make install   (or: pip install -r requirements.txt)
 #
 # The default MODEL_BACKEND=mock needs NO network at runtime and NO API keys.
 # langchain-openai / langfuse are only exercised for the ollama/openrouter backends.
-langgraph
-langchain-core
-langchain-openai
-langfuse
-pydantic
-pydantic-settings
-pandas
-python-dotenv
-temporalio
-curl_cffi
-httpx
-click
-pytest
-pytest-asyncio
+# Versions verified green on the CI matrix (Python 3.11 and 3.12).
+langgraph==1.2.9
+langchain-core==1.5.0
+langchain-openai==1.4.0
+langfuse==4.14.1
+pydantic==2.13.4
+pydantic-settings==2.14.2
+pandas==3.0.3
+python-dotenv==1.2.2
+temporalio==1.30.0
+curl_cffi==0.15.0
+httpx==0.28.1
+click==8.4.2
+pytest==9.1.1
+pytest-asyncio==1.4.0
