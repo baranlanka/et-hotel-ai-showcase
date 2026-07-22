@@ -28,43 +28,64 @@ flowchart TB
     langfuse -. prompts/traces .-> platform
 ```
 
-## 2. Container view
+## 2. Pipeline runs
 
-**Every subsystem runs as durable Temporal workflows/activities** — content generation, scraping, proxy management, and outreach — across ~10 worker services, giving the whole platform one retry/recovery/tracing spine. The showcase extracts the content pipeline as a standalone LangGraph slice and the outreach engine's real Temporal workflow; the rest (the vision/image tail, publishing, storage, CD) is described, not shipped.
+**Every subsystem runs as durable Temporal workflows/activities across ~10 worker services** — one retry/recovery/tracing spine for the whole platform. The headline is the **content pipeline run**: a `MasterHotelPipelineWorkflow` executes child workflows sequentially across task queues (stages 1–2 required, 3–4 best-effort → `partial_success`), while maintenance **Temporal Schedules** (proxy / cookie / sitemap) keep the shared CockroachDB pools fresh and a **bounded-WIP dispatcher** fans the pipeline out over thousands of hotels.
+
+### Content pipeline run
 
 ```mermaid
 flowchart TB
-    OTA[(OTA / web data)] --> F
-    subgraph temporal[Temporal — durable orchestration · retries · tracing · ~10 workers]
-      direction LR
-      subgraph fetch[Resilient fetcher · app/shared]
-        F[proxy pool + failover<br/>circuit breaker · rate limiter<br/>backoff · profile cache]
+    API[FastAPI · /api/v2/orchestration] --> MASTER
+    DISP[bounded-WIP dispatcher<br/>drains extraction_queue] --> S1
+    SCHED[Temporal Schedules<br/>proxy · cookie · sitemap] -. refresh .-> DB[(CockroachDB<br/>proxies · cookies · queues · state)]
+
+    subgraph temporal[Temporal — durable orchestration · retries · OTel tracing]
+      direction TB
+      MASTER([MasterHotelPipelineWorkflow]) --> S1
+      S1[Stage 1 · Extraction workflow<br/>scrape via proxy pool] --> S2
+      S2[Stage 2 · Content generation<br/>LangGraph graph] --> S3
+      S3[Stage 3 · Static export] --> S4
+      S4[Stage 4 · CMS publish]
+      subgraph lg[Stage 2 · LangGraph content graph]
+        direction LR
+        A[aspect extraction<br/>ABSA + LLM] --> AGG[aggregate] --> V[Qwen-VL vision<br/>photo analysis · image select] --> TAX[image taxonomy] --> GEN[generate<br/>overviews · rooms · reviews] --> TR[translate]
       end
-      subgraph pipeline[Content pipeline · LangGraph]
-        direction TB
-        A[aspect extraction<br/>ABSA + LLM] --> AGG[hotel-type aggregation]
-        AGG --> V[vision · Qwen-VL<br/>photo analysis · image selection]
-        V --> G[multi-model generation<br/>overviews · rooms · summaries]
-        G --> T[translation]
-      end
-      subgraph agents[Outreach engine · 5 agents]
-        direction TB
-        IG[input guard] --> R[Agent E · router]
-        R --> C[Agent C · qualifier]
-        R --> D[Agent D · site reveal]
-        C --> OG[output guard]
-        D --> MG{{money-gate<br/>fail-closed}}
-        MG --> ops[Human approval]
-      end
-      F --> A
+      S2 --> lg
     end
-    T --> CMS[(CMS + CDN)]
-    LF[(Langfuse)] -. prompts .-> G
-    LF -. prompts .-> R
-    DB[(CockroachDB)] --- temporal
-    RD[(Redis)] --- temporal
+
+    S1 -->|rotating proxies + cookies| SRC[(OTA / hotel data)]
+    S1 --> B2[(Backblaze B2 · data lake)]
+    V -->|vision| LLM
+    GEN -->|small open models| LLM[OpenRouter / LM Studio<br/>Langfuse: prompts + traces]
+    S2 --> B2
+    S4 -->|upsert| CMS[(Directus CMS)]
+    temporal --- DB
     temporal --> OBS[OTel → Grafana / Tempo / Loki / Prometheus]
 ```
+
+Stages: **1 Extraction** (scrape → raw JSON + images to B2; a fail-loud zero-record gate re-queues suspected soft-blocks) → **2 Content generation** (the LangGraph graph above; a CP0 idempotency probe short-circuits if a bundle already exists, saving LLM cost) → **3 Static export** (per-language SEO/meta JSON) → **4 CMS publish** (health → validate dry-run → upsert → verify). Every LLM/vision call goes through the `llm_factory` to **small open models** on OpenRouter (or local LM Studio), prompts + traces in Langfuse; all artifacts land in Backblaze B2; the scrape stage leases rotating proxies + cookies from the CockroachDB pool.
+
+### Outreach pipeline run
+
+```mermaid
+flowchart LR
+    DISC[discovery / ICP] --> AUD
+    subgraph temporal2[Temporal · leadgen queues]
+      direction LR
+      AUD([LeadGenAuditWorkflow<br/>website audit + enrich]) --> PUSH([LeadGenPushWorkflow<br/>CRM push])
+      PUSH --> CONV([OutreachConversationWorkflow<br/>5 agents · money-gate])
+      CONV --> REVEAL([LeadGenETRegistrationWorkflow<br/>site reveal])
+    end
+    AUD -->|contacts| OUTS[(contact enrichment)]
+    CONV -->|small open models| LLM2[OpenRouter · Langfuse]
+    CONV <-->|messages| CRM[(CRM / email)]
+    HOOK[POST /webhooks/reply<br/>+ poller] -. inbound signal .-> CONV
+    REVEAL -->|register| ETAPI[(platform API)]
+    REVEAL -->|link ids| CMS2[(Directus CMS)]
+```
+
+Lead discovery feeds an audit queue; `LeadGenAuditWorkflow` scores the hotel's website (deterministic, no LLM) and enriches contacts; the lead is pushed to the CRM; `OutreachConversationWorkflow` then runs the durable 5-agent conversation (30-day timeout, `continue_as_new` past ~500 history events). Inbound replies arrive by webhook or poller and are delivered as **Temporal signals** after input-guard sanitizing; the money action (site reveal) is human-gated in the pilot.
 
 ## 3. Runtime view — the 5-agent outreach turn
 

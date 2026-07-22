@@ -70,30 +70,29 @@ Plus a **runnable, sanitized observability stack** (`infra/observability/` — O
 ## Architecture
 
 ```mermaid
-flowchart TB
-    OTA[(OTA / web data)] --> F
-    subgraph temporal[Temporal — durable orchestration · retries · tracing · ~10 workers]
+flowchart LR
+    API[FastAPI trigger<br/>POST /api/v2/orchestration] --> MASTER
+    SCHED[Temporal Schedules<br/>proxy · cookie · sitemap refresh] -. keep pools fresh .-> DB[(CockroachDB<br/>state · queues · proxy pool)]
+
+    subgraph temporal[Temporal · durable orchestration · retries · OTel tracing · ~10 workers]
       direction LR
-      subgraph fetch[Resilient fetcher]
-        F[proxy rotation · circuit breaker<br/>rate limiting · backoff]
-      end
-      subgraph pipeline[Content pipeline · LangGraph]
-        A[aspect extraction<br/>ABSA + LLM] --> G[multi-model routing]
-      end
-      subgraph agents[Outreach engine · 5 agents]
-        GU[OWASP-LLM guards] --- R[router]
-        R --> Q[qualifier] --> MG{{money-gate<br/>fail-closed}}
-      end
-      F --> A
+      MASTER([Master pipeline<br/>workflow]) --> EX[Extraction<br/>scrape → data lake]
+      EX --> CG[Content generation<br/>LangGraph: aspects → Qwen-VL<br/>vision → generate → translate]
+      CG --> EXP[Static export] --> PUB[CMS publish]
+      OUT([Outreach workflow<br/>5 agents · money-gate])
     end
-    G --> CMS[(CMS + CDN)]
-    LF[(Langfuse<br/>prompts · tracing)] -. prompts .-> G
-    LF -. prompts .-> R
-    DB[(CockroachDB)] --- temporal
+
+    EX -->|rotating proxies + cookies| SRC[(OTA / hotel data)]
+    CG -->|small open models| LLM[OpenRouter · LM Studio<br/>Langfuse prompts + traces]
+    CG --> B2[(Backblaze B2<br/>content lake)]
+    PUB -->|upsert| CMS[(Directus CMS)]
+    OUT -->|small open models| LLM
+    OUT <-->|messages · inbound signals| CRM[(CRM / email)]
+    temporal --- DB
     temporal --> OBS[OTel → Grafana / Tempo / Loki / Prometheus]
 ```
 
-One diagram; the full container/runtime views and the 5-agent sequence diagram are in **[docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)**.
+The content pipeline run, end to end: a **`MasterHotelPipelineWorkflow`** drives extraction → content generation (LangGraph) → export → CMS publish, with the outreach flow on the same Temporal backbone. The container/runtime/deployment views, the LangGraph inner graph, and the full outreach pipeline are in **[docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)**.
 
 ## Design decisions & trade-offs
 
