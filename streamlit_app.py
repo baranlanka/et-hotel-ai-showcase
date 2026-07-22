@@ -155,6 +155,7 @@ def run_content_graph(hotel_id: str) -> dict:
 
     result = _run_async(_run())
     return {
+        "aspects": result.get("extracted_aspects") or {},
         "classification": result.get("hotel_type_classification") or {},
         "room_descriptions": result.get("room_descriptions") or {},
         "stats": result.get("stats") or {},
@@ -295,10 +296,12 @@ def page_overview() -> None:
     st.caption("Router & red-team figures are **production measurements** (real 70B model); "
                "the resilience figure is reproduced **live & offline** on the next page.")
 
-    st.subheader("Architecture")
-    mermaid(MERMAID_DIAGRAM)
-    st.caption("The full container/runtime views and the 5-agent sequence diagram live in "
-               "`docs/architecture/ARCHITECTURE.md`.")
+    st.subheader("Architecture — the content pipeline run")
+    st.image(str(_ROOT / "docs" / "dashboard-architecture.png"), use_container_width=True)
+    st.caption("A `MasterHotelPipelineWorkflow` drives extraction → content generation "
+               "(LangGraph) → export → CMS publish, with outreach on the same Temporal "
+               "backbone. Full container/runtime/deployment views + the 5-agent sequence "
+               "diagram: `docs/architecture/ARCHITECTURE.md`.")
 
     st.subheader("What's shown vs. withheld")
     left, right = st.columns(2)
@@ -425,7 +428,8 @@ def page_safety() -> None:
         "is a code constant (changeable only via reviewed code, never an env var), and "
         "every `send_D` is force-routed to a human. Proven live below:"
     )
-    mg = money_gate_probe()
+    with st.spinner("Probing the money-gate live…"):
+        mg = money_gate_probe()
     m1, m2, m3 = st.columns(3)
     m1.metric("_AUTO_SEND_D_ENABLED", str(mg["auto_send_d_enabled"]))
     m2.metric("router emitted", "send_D (forced)")
@@ -543,11 +547,17 @@ def page_content() -> None:
         st.json(hotel)
 
     if not st.button("▶ Run the content graph", type="primary"):
-        st.caption("Runs the `content_only` graph variant on the selected hotel.")
+        st.caption("Runs the `content_only` graph variant on the selected hotel — "
+                   "synthetic loaders → aspect extraction → hotel-type classifier → "
+                   "room-description generator, all on the mock model.")
         return
 
-    with st.spinner("Running the content-generation graph on the mock backend…"):
-        out = run_content_graph(hotel["hotel_id"])
+    try:
+        with st.spinner("Running the content-generation graph on the mock backend…"):
+            out = run_content_graph(hotel["hotel_id"])
+    except Exception as exc:  # keep the demo resilient rather than crashing the page
+        st.error(f"The graph raised `{type(exc).__name__}: {exc}`.")
+        return
 
     st.subheader("Hotel-type classification")
     cls = out["classification"]
@@ -555,14 +565,26 @@ def page_content() -> None:
         c1, c2 = st.columns(2)
         c1.metric("Primary type", str(cls.get("primary_type", "—")))
         c2.metric("Confidence", str(cls.get("confidence", "—")))
-        st.json(cls)
+        if cls.get("secondary_types"):
+            st.caption("Secondary types: " + ", ".join(map(str, cls["secondary_types"])))
+        with st.expander("classification (structured output)"):
+            st.json(cls)
+    else:
+        st.caption("No classification produced for this fixture.")
 
-    st.subheader(f"Generated room descriptions ({len(out['room_descriptions'])})")
-    for room, desc in out["room_descriptions"].items():
-        st.markdown(f"**{room}**")
-        st.write(desc)
-    st.caption("Descriptions are produced by the deterministic mock; the graph structure, "
-               "routing, and structured outputs are the real production wiring.")
+    rooms = out["room_descriptions"] or {}
+    st.subheader(f"Generated room descriptions ({len(rooms)})")
+    if rooms:
+        for room, desc in rooms.items():
+            with st.container(border=True):
+                st.markdown(f"**{room}**")
+                st.write(desc)
+    else:
+        st.caption("No room descriptions produced.")
+    st.info("Copy quality here is from the **deterministic mock** (generic baseline "
+            "prompts). The graph wiring, per-operation routing, and structured outputs are "
+            "the real production code; the tuned production prompts live in Langfuse and "
+            "are withheld.")
 
 
 # ---------------------------------------------------------------------------

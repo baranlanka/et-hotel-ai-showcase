@@ -27,6 +27,7 @@ label from the input.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from typing import Any
 
@@ -78,6 +79,21 @@ _ROOM_PARAGRAPH = (
     "A calm, comfortable room with an easy, uncluttered layout and plenty of "
     "natural light. Guests consistently mention how restful the space feels and how "
     "thoughtfully it is kept — a simple, welcoming base for a stay."
+)
+
+# A few distinct canned paragraphs so different rooms don't render identically in the
+# demo. Still obviously mock copy — the tuned production prompts live in Langfuse.
+_ROOM_PARAGRAPHS = (
+    _ROOM_PARAGRAPH,
+    "A bright, airy room with warm natural materials and a soft, muted palette. "
+    "Guests highlight the comfortable bed and the quiet, thoughtful layout — an easy, "
+    "restful base within reach of everything that matters.",
+    "A generously sized room with clean lines and gentle, indirect light. Reviewers "
+    "keep returning to the same words — spotless, peaceful, well kept — and to how "
+    "naturally it invites you to unwind after a day out.",
+    "A cosy, well-appointed room that puts comfort first: a restful bed, a tidy "
+    "workspace, and a serene mood throughout — a dependable, welcoming retreat that "
+    "guests describe as feeling genuinely looked after.",
 )
 
 
@@ -166,7 +182,9 @@ def _generate_text(prompt: Any) -> str:
             }
         )
     if "room description" in blob:  # langchain/room_description(+_brief)
-        return _ROOM_PARAGRAPH
+        # Deterministically vary by prompt so different rooms don't read identically.
+        idx = int(hashlib.md5(blob.encode("utf-8")).hexdigest(), 16) % len(_ROOM_PARAGRAPHS)
+        return _ROOM_PARAGRAPHS[idx]
 
     # ---- Outreach agent prompts ----
     if '"draft"' in blob:  # langchain/outreach_qualifier
