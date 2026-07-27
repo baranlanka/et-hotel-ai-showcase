@@ -682,6 +682,20 @@ def main() -> None:
         st.caption("Production hotel/travel AI — interactive showcase")
         choice = st.radio("Page", list(PAGES.keys()), label_visibility="collapsed")
         st.divider()
+        with st.expander("ℹ️  How it works", expanded=True):
+            st.markdown(
+                "Runs the **real** production code on a deterministic **mock** model — "
+                "offline, no API keys. The mock stands in for model *quality*; every "
+                "guard / gate / resilience result is the real code.\n\n"
+                "1. **🛡️ Safety** — paste a hostile reply → the OWASP-LLM guards + "
+                "money-gate run live.\n"
+                "2. **🌐 Resilience** — the real fetch engine beats a naive client "
+                "through a hostile endpoint.\n"
+                "3. **📝 Content** — the LangGraph graph writes listings for a synthetic hotel.\n"
+                "4. **📊 Eval** — deterministic security assertions reproduce right here.\n\n"
+                "Curated prompts, real data, and site-specific scrapers are **withheld**."
+            )
+        st.divider()
         st.caption("🔒 Offline · `MODEL_BACKEND=mock` · no keys, no network")
         st.caption("Built at **Effective Tours**")
         st.caption("[GitHub](https://github.com/baranlanka) · ivan@novikov.lv")
