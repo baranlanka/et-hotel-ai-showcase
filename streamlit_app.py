@@ -222,6 +222,32 @@ def run_guards(raw: str) -> dict:
     }
 
 
+@st.cache_resource(show_spinner="Warming up the demo engine (one-time — LangGraph, Temporal, the guards)…")
+def _warm() -> bool:
+    """Pre-import the heavy modules ONCE at startup so the first interaction on any
+    page is snappy (avoids paying langchain/langgraph/temporalio import cost on the
+    first button click). Cached for the whole session; a failed optional import must
+    never block the UI."""
+    import importlib
+
+    for mod in (
+        "llm_content_generation.services.llm_factory",
+        "llm_content_generation.services.mock_llm",
+        "llm_content_generation.et_langgraph.graph",
+        "app.leadgen.outreach.input_guard",
+        "app.leadgen.outreach.output_guard",
+        "app.temporal.workflows.leadgen.outreach_conversation_workflow",
+        "scripts.demo.demo_resilience",
+        "scripts.eval.run_eval_suite",
+        "scripts.eval.run_outreach_multiturn",
+    ):
+        try:
+            importlib.import_module(mod)
+        except Exception:
+            pass
+    return True
+
+
 # ---------------------------------------------------------------------------
 # Shared UI bits
 # ---------------------------------------------------------------------------
@@ -357,11 +383,7 @@ def page_safety() -> None:
         col.button(label, on_click=_set_preset, args=(value,), use_container_width=True)
 
     raw = st.text_area("Untrusted inbound reply", key="playground_text", height=140)
-    run = st.button("▶ Run the guards on this text", type="primary")
-
-    if not run:
-        st.info("Edit the text or pick a preset, then run the guards.")
-        return
+    st.caption("The guards run **live** on every preset click or text edit — no button needed.")
 
     r = run_guards(raw)
 
@@ -461,10 +483,8 @@ def page_resilience() -> None:
     )
     offline_badge()
 
-    if not st.button("▶ Run the resilience demo", type="primary"):
-        st.caption("Click to stand up the hostile endpoint and drive both clients through it.")
-        return
-
+    st.caption("Runs automatically below (cached) — stands up the hostile endpoint and "
+               "drives both clients through it. Deterministic, so the numbers are stable.")
     with st.spinner("Driving the real engine vs the naive client through the hostile endpoint…"):
         d = run_resilience_demo()
     e, n = d["engine"], d["naive"]
@@ -546,12 +566,9 @@ def page_content() -> None:
     with st.expander("Synthetic hotel fixture (data/synthetic/hotels.json)"):
         st.json(hotel)
 
-    if not st.button("▶ Run the content graph", type="primary"):
-        st.caption("Runs the `content_only` graph variant on the selected hotel — "
-                   "synthetic loaders → aspect extraction → hotel-type classifier → "
-                   "room-description generator, all on the mock model.")
-        return
-
+    st.caption("Runs automatically on the selected hotel (cached): synthetic loaders → "
+               "hotel-type classifier → room-description generator, all on the mock model. "
+               "Pick another hotel to re-run.")
     try:
         with st.spinner("Running the content-generation graph on the mock backend…"):
             out = run_content_graph(hotel["hotel_id"])
@@ -659,6 +676,7 @@ def main() -> None:
         layout="wide",
         initial_sidebar_state="expanded",
     )
+    _warm()  # one-time heavy-import warm-up so every page responds fast
     with st.sidebar:
         st.markdown("### 🏨 et-hotel-ai")
         st.caption("Production hotel/travel AI — interactive showcase")
