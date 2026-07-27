@@ -32,6 +32,10 @@ A. DETERMINISTIC SECURITY / GUARD ASSERTIONS  (gate the exit code)
 
 > **▶ Try it live** — an interactive Streamlit dashboard with an **LLM-safety playground** (paste a hostile message and watch the *real* guards catch it), the anti-bot resilience demo, and the content pipeline: **[et-hotel-ai-showcase.streamlit.app](https://et-hotel-ai-showcase.streamlit.app)** — or run it locally with `streamlit run streamlit_app.py`.
 
+[![et-hotel-ai interactive dashboard](docs/screenshots/overview.png)](https://et-hotel-ai-showcase.streamlit.app)
+
+<sub>Runs fully offline on a deterministic mock model — no API keys. More pages (safety playground · anti-bot resilience · content pipeline · eval) in [`docs/screenshots/`](docs/screenshots).</sub>
+
 ## Overview
 
 Effective Tours needed two things a small team can't do by hand at scale: **(1)** produce rich, accurate, *multilingual* content for tens of thousands of hotels, and **(2)** find and recruit new hotels through personalized outreach — without a human writing every message, and **without ever letting an autonomous agent take a money-committing action on its own.**
