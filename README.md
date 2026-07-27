@@ -30,7 +30,7 @@ A. DETERMINISTIC SECURITY / GUARD ASSERTIONS  (gate the exit code)
  RESULT: deterministic assertions ALL PASS  ->  exit 0
 ```
 
-> **▶ Try it live** — an interactive Streamlit dashboard with an **LLM-safety playground** (paste a hostile message and watch the *real* guards catch it), the anti-bot resilience demo, and the content pipeline: **[et-hotel-ai-showcase.streamlit.app](https://et-hotel-ai-showcase.streamlit.app)** — or run it locally with `streamlit run streamlit_app.py`.
+> **▶ Explore it** — an interactive, **code-linked walkthrough**: step through the real LangGraph nodes and Temporal agents (each linked to its source), with the OWASP-LLM guards, the fail-closed money-gate, the resilience engine, and the security eval running **live**: **[et-hotel-ai-showcase.streamlit.app](https://et-hotel-ai-showcase.streamlit.app)** — or run it locally with `streamlit run streamlit_app.py`.
 
 [![et-hotel-ai interactive dashboard](docs/screenshots/overview.png)](https://et-hotel-ai-showcase.streamlit.app)
 
