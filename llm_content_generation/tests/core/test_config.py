@@ -128,8 +128,9 @@ class TestLangFuseConfig:
         """Test the get_debug_info method."""
         from llm_content_generation.core.config import LangFuseConfig
 
-        # Test with explicit credentials
-        config_obj = LangFuseConfig(secret_key="secret", public_key="public")
+        # Test with explicit credentials (set enable explicitly so the assertion does
+        # not depend on the ambient LANGFUSE_TRACING_ENABLED env var, e.g. in CI).
+        config_obj = LangFuseConfig(enable=True, secret_key="secret", public_key="public")
         debug_info = config_obj.get_debug_info()
         assert debug_info["enabled"] is True
         assert debug_info["has_credentials"] is True
