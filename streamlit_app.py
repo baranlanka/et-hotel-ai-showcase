@@ -234,8 +234,9 @@ def page_overview() -> None:
         "→ Qwen-VL photo analysis + image selection → per-operation model routing → multilingual "
         "listings.\n"
         "- **Temporal 5-agent cold-outreach engine** — mines review hooks, opens & qualifies "
-        "conversations autonomously, hardened against the **OWASP LLM Top-10** with a "
-        "**deterministic, fail-closed money-gate**.\n"
+        "conversations autonomously, hardened against the OWASP-LLM risks it faces "
+        "(prompt injection, output leakage, excessive agency, unbounded consumption — "
+        "LLM01/02/06/08/10) with a **deterministic, fail-closed money-gate**.\n"
         "- **Resilient distributed fetcher** — proxy rotation + failover, circuit breaking, "
         "rate limiting, backoff-with-jitter."
     )
@@ -250,7 +251,7 @@ def page_overview() -> None:
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Router accuracy", "92.2%", help="Agent E exact-match, production 70B model")
-    c2.metric("Red-team defended", "42/42", help="injection / jailbreak / funnel-abuse / STOP")
+    c2.metric("Red-team defended", "42/42", help="injection / jailbreak / funnel-abuse / STOP — production 70B model, reproduce live (the offline mock ships a weak-model illustrative run)")
     c3.metric("Resilience fetch", "60/60", help="engine vs 15/60 for a naive client")
 
     st.subheader("Architecture — the content pipeline run")
@@ -275,7 +276,8 @@ def page_content() -> None:
         f"One fictional hotel, **{wt.CONTENT_HOTEL['name']}** ({wt.CONTENT_HOTEL['location']}), "
         "walked through the real LangGraph graph — each stage named, linked to source, and "
         "shown with a representative artifact.")
-    st.caption(f"Fixture: {wt.CONTENT_HOTEL['signals']}")
+    st.caption(f"Representative production hotel — {wt.CONTENT_HOTEL['signals']}. The shipped "
+               "synthetic fixture is smaller (3 reviews / 3 rooms); see 'prove it runs' below.")
     offline_badge()
 
     nodes = " → ".join(s["node"].split(" ")[0].split("(")[0] for s in wt.CONTENT_STAGES)

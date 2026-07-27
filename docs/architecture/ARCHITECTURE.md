@@ -141,7 +141,7 @@ sequenceDiagram
 flowchart LR
     GH[GitHub Actions] -->|build| GHCR[(GHCR image)]
     GHCR -->|auto-deploy| KM[Komodo]
-    KM --> HZ[Hetzner host<br/>~14 services via docker-compose]
+    KM --> HZ[Hetzner host<br/>~17 services via docker-compose]
     HZ --- TS[Tailscale / Cloudflare Tunnel]
     HZ --> OTEL[OTel collector → Tempo/Loki/Prometheus/Grafana]
 ```

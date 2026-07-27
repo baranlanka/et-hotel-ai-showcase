@@ -60,7 +60,7 @@ Conflating the two is the usual way LLM eval numbers become unfalsifiable. Keepi
 | `run_outreach_multiturn` | Do funnel invariants hold across a whole conversation? | Multi-persona multi-turn transcripts (crescendo jailbreak, exfiltration-over-turns, funnel rusher…) asserting the money-gate never auto-fires |
 | `run_outreach_live_eval` | How accurate is the router, and are drafts honest? | Exact-match over a synthetic golden set + an LLM judge for opener/qualifier honesty |
 
-### 5.3 OWASP-LLM Top-10 mapping
+### 5.3 OWASP-LLM risk mapping (the five risks that apply)
 
 | OWASP-LLM risk | Control in this system |
 |---|---|
@@ -78,7 +78,7 @@ Conflating the two is the usual way LLM eval numbers become unfalsifiable. Keepi
 
 ### 5.5 Reproducibility
 
-The mock backend is deterministic and **not rigged**: it returns a fixed neutral routing class, so the offline router accuracy prints an obviously-low, clearly-labeled illustrative figure (~28%), never the production 92.2%. What reproduces offline is the *methodology and the deterministic guarantees*; the accuracy is a production measurement re-runnable against any live model. `pinned deps + Faker(seed=0) fixtures + mock model` ⇒ byte-identical results on any machine.
+The mock backend is deterministic and **not rigged**: it returns a fixed neutral routing class, so the offline router accuracy prints an obviously-low, clearly-labeled illustrative figure (~28%), never the production 92.2%. What reproduces offline is the *methodology and the deterministic guarantees*; the accuracy is a production measurement re-runnable against any live model. `pinned deps + static synthetic JSON fixtures + a seeded (1337) hostile endpoint + mock model` ⇒ byte-identical results on any machine.
 
 ## 6. Trade-offs & lessons
 

@@ -24,14 +24,14 @@ def code(path: str | None) -> str | None:
 CONTENT_HOTEL = {
     "name": "The Azure Lagoon Retreat",
     "location": "Marisol Bay, Republic of Vendara (fictional)",
-    "signals": "42 reviews · 5 room types · beachfront · adults-oriented",
+    "signals": "beachfront · adults-oriented · boutique resort",
 }
 
 # stage: title, node, file (repo-relative or None), model, in_repo, what, sample_in, sample_out, why
 CONTENT_STAGES = [
     {
         "title": "1 · Load reviews & facilities",
-        "node": "review_files_discovery → storage_loader",
+        "node": "review_loader → room_type_loader",
         "file": "llm_content_generation/et_langgraph/nodes/data.py",
         "model": None,
         "in_repo": True,
@@ -39,9 +39,9 @@ CONTENT_STAGES = [
                 "data lake (Backblaze B2 in production; a synthetic fixture here) into a "
                 "normalized frame the graph operates on.",
         "sample_in": "hotel_id = hotels.demo.coast.azure-lagoon  ·  ota = demo_ota",
-        "sample_out": '42 reviews, 5 room types loaded. A checkpoint (CP0) first probes B2 '
-                      'for an existing content bundle — if present and regenerate=False, the '
-                      'whole run short-circuits (no LLM spend).',
+        "sample_out": 'Reviews, room metadata and facilities loaded into a normalized frame. '
+                      'A checkpoint (CP0) first probes B2 for an existing content bundle — if '
+                      'present and regenerate=False, the whole run short-circuits (no LLM spend).',
         "why": "The idempotency probe is the cheap-by-default move: re-running a hotel that "
                "hasn't changed costs zero tokens.",
     },
@@ -67,7 +67,7 @@ CONTENT_STAGES = [
     },
     {
         "title": "3 · Hotel-type classification",
-        "node": "hotel_type_aggregator",
+        "node": "hotel_type_aggregation",
         "file": "llm_content_generation/et_langgraph/nodes/hotel_type_aggregator.py",
         "model": "llama-3.3-70b-instruct",
         "in_repo": True,
@@ -86,7 +86,7 @@ CONTENT_STAGES = [
         "in_repo": False,
         "what": "A vision-language model analyzes each property/room photo → structured "
                 "visual attributes + alt-text (lighting, view, layout, standout features).",
-        "sample_in": "12 property photos + 5 room-type galleries (from B2)",
+        "sample_in": "the property photos + per-room galleries (from B2)",
         "sample_out": 'suite_ocean_1.jpg → {"view": "lagoon", "light": "bright, natural", '
                       '"features": ["private balcony", "freestanding tub"], '
                       '"alt": "Ocean-view suite with a private balcony over the lagoon"}',
@@ -163,7 +163,7 @@ CONTENT_STAGES = [
         "in_repo": False,
         "what": "Synthesizes the review corpus into a fair, evidence-grounded summary "
                 "(pros/cons) rather than cherry-picking.",
-        "sample_in": "42 reviews + extracted aspects",
+        "sample_in": "the review corpus + extracted aspects",
         "sample_out": "\"Guests love the suites, the breakfast and the service; the most "
                       "common caveat is the distance from town and limited late-night dining.\"",
         "why": "Grounded in the aspect evidence, so the summary can't drift into marketing "
@@ -194,7 +194,7 @@ CONTENT_STAGES = [
                 "bundle, upserts it into Directus, and verifies the publish — failing loud so "
                 "the parent pipeline degrades to partial_success honestly.",
         "sample_in": "the assembled content bundle (from B2)",
-        "sample_out": "Directus: hotel upserted · 5 rooms · 3 languages · 8 images linked · verified",
+        "sample_out": "Directus: hotel upserted · rooms + multilingual content + images linked · verified",
         "why": "Publish is a money/observable action, so it's its own workflow with an "
                "explicit verify step, not a fire-and-forget call.",
     },
@@ -219,7 +219,7 @@ def _outreach_common(reply_text: str, hostile: bool) -> list[dict]:
             "what": "Reads the hotel's public reviews and extracts a genuine, specific "
                     "personalization hook as a validated `ReviewHook` (staff names / PII "
                     "are nulled at the Pydantic boundary).",
-            "sample_in": "42 reviews for The Azure Lagoon Retreat",
+            "sample_in": "the hotel's public reviews",
             "sample_out": 'ReviewHook(tier=3, hook_text="the rooftop breakfast keeps coming '
                           'up", evidence_quote="the rooftop breakfast was a highlight")',
             "why": "The hook must be real (not flattery) — `ReviewHook` validators reject "
