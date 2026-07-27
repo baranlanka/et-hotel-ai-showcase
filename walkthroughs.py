@@ -2,7 +2,7 @@
 
 This is NOT a live demo. Each stage names the REAL LangGraph node / Temporal
 activity that runs it in production, links to the actual source file (when it's
-part of this public slice), names the small open model used, and shows a
+part of this public slice), names the model used, and shows a
 *representative* input → output. LLM-quality outputs here are hand-authored to
 reflect production quality (the tuned prompts live in Langfuse and are withheld);
 deterministic stages (guards, money-gate) are run live from the real code in the
@@ -49,7 +49,7 @@ CONTENT_STAGES = [
         "title": "2 · Aspect extraction (ABSA + LLM)",
         "node": "aspect_extraction",
         "file": "llm_content_generation/et_langgraph/nodes/extraction.py",
-        "model": "fine-tuned PyABSA ATEPC + mistral-7b-instruct",
+        "model": "fine-tuned PyABSA ATEPC + llama-3.3-70b-instruct",
         "in_repo": True,
         "what": "Runs a fine-tuned aspect-based sentiment model over the reviews, then an "
                 "LLM pass to normalize aspects, attach evidence quotes, and surface "
@@ -61,14 +61,15 @@ CONTENT_STAGES = [
                       "service → positive (\"staff went out of their way\")\n"
                       "location → mixed (\"a bit far from town\")\n"
                       "signals → [resort, boutique]",
-        "why": "A cheap 7B model + a fine-tuned ABSA head beats a frontier model on cost at "
-               "tens-of-thousands-of-hotels scale, with evidence quotes for traceability.",
+        "why": "A cheap, open model + a fine-tuned ABSA head beats reaching for a frontier "
+               "model on cost at tens-of-thousands-of-hotels scale, with evidence quotes for "
+               "traceability.",
     },
     {
         "title": "3 · Hotel-type classification",
         "node": "hotel_type_aggregator",
         "file": "llm_content_generation/et_langgraph/nodes/hotel_type_aggregator.py",
-        "model": "gemma-2-12b-it",
+        "model": "llama-3.3-70b-instruct",
         "in_repo": True,
         "what": "Aggregates the extracted signals into a hotel-type classification with a "
                 "confidence and supporting evidence — routes downstream copy tone.",
@@ -110,7 +111,7 @@ CONTENT_STAGES = [
         "title": "6 · Image taxonomy",
         "node": "build_stitch_taxonomy",
         "file": None,
-        "model": None,
+        "model": "llama-3.3-70b-instruct",
         "in_repo": False,
         "what": "Tags the selected images into a taxonomy (room vs. amenity vs. view vs. "
                 "dining …) so the CMS can slot them into the right sections.",
@@ -123,7 +124,7 @@ CONTENT_STAGES = [
         "title": "7 · Hotel overview generation (with a validation loop)",
         "node": "content_generation → hotel_description (+ validate/retry)",
         "file": None,  # descriptions_hotel is production-only; the room path IS in the slice
-        "model": "deepseek-v3.2",
+        "model": "deepseek-v3.2 (writer) + mistral-small-3.2-24b (validator)",
         "in_repo": False,
         "what": "Generates the property overview from the aspects, type, and visual synthesis, "
                 "then runs a validator that checks factuality/tone and re-generates on failure "
@@ -142,7 +143,7 @@ CONTENT_STAGES = [
         "title": "8 · Room descriptions",
         "node": "room_descriptions",
         "file": "llm_content_generation/et_langgraph/nodes/descriptions_rooms.py",
-        "model": "deepseek-v3.2 / gemma-2-12b",
+        "model": "deepseek-v3.2",
         "in_repo": True,
         "what": "Writes a distinct description per room type, then strips OTA-template "
                 "boilerplate the model tends to anchor to (so copy doesn't read like every "
@@ -213,7 +214,7 @@ def _outreach_common(reply_text: str, hostile: bool) -> list[dict]:
             "title": "A · Mine personalization hooks",
             "node": "mine_reviews_activity  (Agent A)",
             "file": "app/temporal/activities/leadgen/mine_reviews_activity.py",
-            "model": "llama-3.3-70b-instruct",
+            "model": "deepseek-v3.2",
             "in_repo": True,
             "what": "Reads the hotel's public reviews and extracts a genuine, specific "
                     "personalization hook as a validated `ReviewHook` (staff names / PII "
@@ -228,7 +229,7 @@ def _outreach_common(reply_text: str, hostile: bool) -> list[dict]:
             "title": "B · Compose the opener",
             "node": "fill_opener_template_activity  (Agent B)",
             "file": "app/temporal/activities/leadgen/fill_opener_template_activity.py",
-            "model": "llama-3.3-70b-instruct",
+            "model": "deepseek-v3.2",
             "in_repo": True,
             "what": "Writes the first-touch email using the mined hook — warm, specific, "
                     "honest about the free sample, no spam patterns.",
@@ -279,7 +280,7 @@ OUTREACH_PRESETS = {
                 "title": "C · Draft the qualifier (output-guarded, runs live)",
                 "node": "handle_reply_qualifier_activity  (Agent C)",
                 "file": "app/temporal/activities/leadgen/handle_reply_qualifier_activity.py",
-                "model": "llama-3.3-70b-instruct",
+                "model": "deepseek-v3.2",
                 "in_repo": True,
                 "what": "Writes the qualifying reply / free-sample pitch, then the deterministic "
                         "output guard checks it for leaks, role markers, scaffolding and PII "

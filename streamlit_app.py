@@ -2,7 +2,7 @@
 
 This is a **code-linked worked example**, not a live demo. Each stage names the real
 LangGraph node / Temporal activity that runs it in production, links to the source
-file, names the small open model used, and shows a representative input → output.
+file, names the model used, and shows a representative input → output.
 
 - LLM-*quality* stages (content, agent drafts) show hand-authored representative
   output (the tuned prompts live in Langfuse and are withheld).
@@ -240,10 +240,13 @@ def page_overview() -> None:
         "rate limiting, backoff-with-jitter."
     )
     st.info(
-        "**Small-model engineering — deliberately hard mode.** Every result was produced with "
-        "*small, cheap, open* models (DeepSeek's budget tiers, Qwen, Llama) via OpenRouter — "
-        "**not GPT-5 or Claude Sonnet.** Hitting production quality on small models (routing, "
-        "curated prompts, structured outputs, guardrails) is the real engineering.", icon="💡")
+        "**Cheap-open-model engineering — deliberately hard mode.** Every result was produced "
+        "with *cheap, open, non-frontier* models routed per operation — Llama-3.3-70B "
+        "(extraction/classification/routing), DeepSeek-V3.2 (generation/outreach), Qwen3-VL-32B "
+        "(vision), Mistral-Small-24B (validator) via OpenRouter — **never GPT-5 or Claude.** "
+        "The model is set in each prompt's Langfuse config. Hitting production quality this way "
+        "(routing, curated prompts, structured outputs, guardrails) is the real engineering.",
+        icon="💡")
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Router accuracy", "92.2%", help="Agent E exact-match, production 70B model")

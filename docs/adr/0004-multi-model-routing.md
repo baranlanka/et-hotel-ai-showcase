@@ -3,10 +3,10 @@
 **Status:** Accepted
 
 ## Context
-The content pipeline performs ~8 distinct LLM operations (aspect extraction, classification, room/hotel description, review summarization, translation, vision extraction). They have very different quality/cost sweet spots, and there was a deliberate product goal: **hit production quality on small, cheap, open models (DeepSeek / Qwen / Llama), not frontier models (GPT-5 / Claude)** — for cost and control at scale. Reaching for a frontier model everywhere would be neither affordable nor a demonstration of engineering.
+The content pipeline performs ~8 distinct LLM operations (aspect extraction, classification, room/hotel description, review summarization, translation, vision extraction). They have very different quality/cost sweet spots, and there was a deliberate product goal: **hit production quality on cheap, open, non-frontier models (Llama-3.3-70B, DeepSeek-V3.2, Qwen-VL-32B, Mistral-Small-24B), not frontier models (GPT-5 / Claude)** — for cost and control at scale. Reaching for a frontier model everywhere would be neither affordable nor a demonstration of engineering.
 
 ## Decision
-Centralize model construction in an **`llm_factory`** that maps each operation to a configured, cost-appropriate model (e.g. a small instruct model for extraction, a vision model for images, a stronger model for long-form generation), across OpenRouter and local (LM Studio/Ollama). Enforce a **hard cost guardrail** that blocks expensive models unless explicitly allowed. Expose a single `MODEL_BACKEND` switch (`mock`/`ollama`/`openrouter`) so every node and the eval harness pick up the backend uniformly.
+Centralize model construction in an **`llm_factory`** that maps each operation to a configured cheap/open model — **Llama-3.3-70B** for extraction/classification/routing, **DeepSeek-V3.2** for generation/translation/outreach, **Qwen3-VL-32B** for vision, **Mistral-Small-24B** for the description validator — across OpenRouter and local (LM Studio/Ollama). The model for each operation is set in its **Langfuse prompt config** (tunable without a deploy). Enforce a **hard cost guardrail** that blocks expensive models unless explicitly allowed. Expose a single `MODEL_BACKEND` switch (`mock`/`ollama`/`openrouter`) so every node and the eval harness pick up the backend uniformly.
 
 ## Alternatives considered
 - **One strong model for everything.** Rejected on cost and on over-serving simple operations.

@@ -57,14 +57,14 @@ flowchart TB
     S1 -->|rotating proxies + cookies| SRC[(OTA / hotel data)]
     S1 --> B2[(Backblaze B2 · data lake)]
     V -->|vision| LLM
-    GEN -->|small open models| LLM[OpenRouter / LM Studio<br/>Langfuse: prompts + traces]
+    GEN -->|cheap open models| LLM[OpenRouter / LM Studio<br/>Langfuse: prompts + traces]
     S2 --> B2
     S4 -->|upsert| CMS[(Directus CMS)]
     temporal --- DB
     temporal --> OBS[OTel → Grafana / Tempo / Loki / Prometheus]
 ```
 
-Stages: **1 Extraction** (scrape → raw JSON + images to B2; a fail-loud zero-record gate re-queues suspected soft-blocks) → **2 Content generation** (the LangGraph graph above; a CP0 idempotency probe short-circuits if a bundle already exists, saving LLM cost) → **3 Static export** (per-language SEO/meta JSON) → **4 CMS publish** (health → validate dry-run → upsert → verify). Every LLM/vision call goes through the `llm_factory` to **small open models** on OpenRouter (or local LM Studio), prompts + traces in Langfuse; all artifacts land in Backblaze B2; the scrape stage leases rotating proxies + cookies from the CockroachDB pool.
+Stages: **1 Extraction** (scrape → raw JSON + images to B2; a fail-loud zero-record gate re-queues suspected soft-blocks) → **2 Content generation** (the LangGraph graph above; a CP0 idempotency probe short-circuits if a bundle already exists, saving LLM cost) → **3 Static export** (per-language SEO/meta JSON) → **4 CMS publish** (health → validate dry-run → upsert → verify). Every LLM/vision call goes through the `llm_factory` to **cheap open models** on OpenRouter (or local LM Studio), prompts + traces in Langfuse; all artifacts land in Backblaze B2; the scrape stage leases rotating proxies + cookies from the CockroachDB pool.
 
 ### Outreach pipeline run
 
@@ -78,7 +78,7 @@ flowchart LR
       CONV --> REVEAL([LeadGenETRegistrationWorkflow<br/>site reveal])
     end
     AUD -->|contacts| OUTS[(contact enrichment)]
-    CONV -->|small open models| LLM2[OpenRouter · Langfuse]
+    CONV -->|cheap open models| LLM2[OpenRouter · Langfuse]
     CONV <-->|messages| CRM[(CRM / email)]
     HOOK[POST /webhooks/reply<br/>+ poller] -. inbound signal .-> CONV
     REVEAL -->|register| ETAPI[(platform API)]

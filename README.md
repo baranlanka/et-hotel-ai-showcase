@@ -46,7 +46,7 @@ This repo is the engineering answer to both — two product lines plus a shared 
 - **A Temporal-orchestrated, 5-agent cold-outreach engine** — it mines personalization hooks from reviews, opens a conversation, qualifies replies, and drives a funnel *autonomously* — hardened against the OWASP **LLM Top-10** (prompt injection, output leakage, excessive agency) with a **deterministic, fail-closed "money-action" gate** and a **reproducible red-team + eval harness**.
 - **A resilient distributed fetcher** — the ingestion backbone that reliably pulled hotel data through production-grade, *adaptive* anti-bot defenses (WAF-style rate limiting, IP-reputation bans, fingerprint & bot-challenges): a rotating proxy pool with failover, per-request browser/TLS fingerprint synthesis, circuit breaking, and rate limiting. *Targets and purpose are withheld; a neutral, self-hosted resilience PoC is included — see [below](#resilient-distributed-fetcher).*
 
-> **Small-model engineering — deliberately hard mode.** Every result here was produced with *small, cheap, open* models — DeepSeek's budget tiers, Qwen, and Llama (extraction) via OpenRouter — **not GPT-5 or Claude Sonnet.** Hitting production quality on small models (through per-operation routing, curated prompting, structured outputs, and hard guardrails) *is* the engineering — a frontier model would make the same task trivial and cost far more. The system was built to run cheap and stay in control.
+> **Cheap-open-model engineering — deliberately hard mode.** Every result here was produced with *cheap, open, non-frontier* models routed **per operation** — **Llama-3.3-70B** (aspect extraction · classification · routing), **DeepSeek-V3.2** (generation · translation · outreach), **Qwen3-VL-32B** (vision), **Mistral-Small-24B** (a separate validator) via OpenRouter — **never GPT-5 or Claude.** Each operation's model is set in its **Langfuse prompt config**, so routing is tuned without a deploy. Hitting production quality this way (per-operation routing + curated prompting + structured outputs + hard guardrails) *is* the engineering — a frontier model would make the same task trivial and cost far more.
 
 **Constraints it was built under:** real production scale and cost pressure (so: multi-model routing + guardrails, not one big model everywhere); durable, resilient execution (Temporal); an autonomous agent that must **never** self-authorize an irreversible action; and strict data-provenance discipline.
 
@@ -67,7 +67,7 @@ Plus a **runnable, sanitized observability stack** (`infra/observability/` — O
 ## Tech stack
 
 **Orchestration & agents:** **Temporal** — platform-wide durable orchestration; *every* subsystem (content · scraping · proxy · outreach) runs as Temporal workflows/activities · LangGraph · LangChain · Pydantic (structured outputs)
-**Models & prompts:** OpenRouter (DeepSeek / Qwen-VL / Mistral / Llama) · local LM Studio/Ollama · a fine-tuned ABSA model · **Langfuse** (prompt management + tracing)
+**Models & prompts:** OpenRouter — **DeepSeek-V3.2 · Llama-3.3-70B · Qwen3-VL-32B · Mistral-Small-24B** (routed per operation) · local LM Studio/Ollama · a fine-tuned ABSA model · **Langfuse** (prompt management + tracing; the model is set in each prompt's config)
 **Backend & data:** FastAPI · CockroachDB (SQLAlchemy 2.0 + Alembic) · Redis · Backblaze B2/CDN
 **Platform:** Docker · GitHub Actions → GHCR → Komodo CD · self-hosted **OpenTelemetry → Grafana / Tempo / Loki / Prometheus**
 
@@ -87,10 +87,10 @@ flowchart LR
     end
 
     EX -->|rotating proxies + cookies| SRC[(OTA / hotel data)]
-    CG -->|small open models| LLM[OpenRouter · LM Studio<br/>Langfuse prompts + traces]
+    CG -->|cheap open models| LLM[OpenRouter · LM Studio<br/>Langfuse prompts + traces]
     CG --> B2[(Backblaze B2<br/>content lake)]
     PUB -->|upsert| CMS[(Directus CMS)]
-    OUT -->|small open models| LLM
+    OUT -->|cheap open models| LLM
     OUT <-->|messages · inbound signals| CRM[(CRM / email)]
     temporal --- DB
     temporal --> OBS[OTel → Grafana / Tempo / Loki / Prometheus]
@@ -105,7 +105,7 @@ The content pipeline run, end to end: a **`MasterHotelPipelineWorkflow`** drives
 | Orchestrating **every** activity across the platform (content gen · scraping · proxy mgmt · outreach) | Celery / raw queues + a state column; ad-hoc async | **Temporal** durable workflows as the platform-wide backbone (~10 workers) | Operational weight of a Temporal cluster + workflow-determinism discipline — bought durability, retries, replayable state, and unified tracing everywhere |
 | Letting an agent take a money-committing action (`send_D`) | Trust the model + a confidence threshold | **Deterministic fail-closed gate** — every `send_D` is force-routed to human approval; the switch changes only via reviewed code, never an env var | The agent is never fully autonomous on irreversible actions (by design — this is the point) |
 | Defending against prompt injection from scraped reviews/replies | Prompt-only "ignore instructions"; a classifier | **Spotlighting + datamarking** (Microsoft) + a **deterministic output leak-guard** | Extra pre/post-processing per turn; some benign inputs get datamarked — worth it for a hard DATA/instruction boundary |
-| Model selection across ~8 operations | A single **frontier** model (GPT-5 / Claude) everywhere | **Per-operation routing to small, cheap open models** (DeepSeek / Qwen / Llama) via an `llm_factory` + a hard cost guardrail | More config + an eval per operation — but a fraction of the cost, and it *proves* the engineering rather than leaning on a big model |
+| Model selection across ~8 operations | A single **frontier** model (GPT-5 / Claude) everywhere | **Per-operation routing to cheap, open, non-frontier models** (Llama-3.3-70B / DeepSeek-V3.2 / Qwen-VL / Mistral-Small), model set per-prompt in Langfuse, + a hard cost guardrail | More config + an eval per operation — but a fraction of the cost, and it *proves* the engineering rather than leaning on a big model |
 | Prompt storage | Hardcode prompts in the repo | **Langfuse** (versioned, evaluated, fetched at runtime) | A runtime dependency — but prompts become versioned, A/B-testable assets, and stay out of source control (which is *why* this showcase can exist) |
 | Showing scraping capability responsibly | Publish the real scraper | **Generic resilient-fetcher engine + a self-hosted hostile-endpoint demo** (`make demo-resilience`) | No site-specific demo — but the resilience is *proven* against a neutral adversary, with no ToS violation or "evasion tooling" optics |
 
